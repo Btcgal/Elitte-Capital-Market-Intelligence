@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
+  
+  --color-primary: #1a1a1a;
+  --color-secondary: #f5f2ed;
+  --color-accent: #8c7b65;
+  --color-muted: #e5e5e5;
+  --color-muted-foreground: #737373;
+  --color-border: #e5e5e5;
+  --color-success: #2e654a;
+  --color-destructive: #8a2e2e;
+}
+
+body {
+  font-family: "Outfit", sans-serif;
+  background-color: #f5f2ed;
+  color: #1a1a1a;
+}
+
+h1, h2, h3, h4, h5, h6, .font-serif {
+  font-family: "Cormorant Garamond", serif;
+}
+
+/* Print Mode overrides for html2pdf */
+.print-mode {
+  background-color: white !important;
+  color: black !important;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.print-mode .print\:block {
+  display: block !important;
+}
+
+.print-mode .print\:hidden {
+  display: none !important;
+}
+
+.print-mode .print\:shadow-none {
+  box-shadow: none !important;
+}
+
+.print-mode .print\:border-none {
+  border: none !important;
+}
+
+.print-mode .prose {
+  max-width: none !important;
+}
+
+.print-mode .prose h1 {
+  font-size: 24px;
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #1a1a1a;
+}
+
+.print-mode .prose h2 {
+  font-size: 18px;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 4px;
+  color: #1a1a1a;
+  page-break-after: avoid;
+}
+
+.print-mode .prose h3 {
+  font-size: 16px;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  color: #404040;
+  page-break-after: avoid;
+}
+
+.print-mode .prose p {
+  margin-bottom: 12px;
+  text-align: justify;
+}
+
+.print-mode .prose ul, .print-mode .prose ol {
+  margin-bottom: 12px;
+  padding-left: 20px;
+}
+
+.print-mode .prose li {
+  margin-bottom: 4px;
+}
+
+.print-mode .prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  font-size: 10px;
+}
+
+.print-mode .prose th {
+  background-color: #f5f5f5;
+  padding: 8px;
+  text-align: left;
+  border-bottom: 2px solid #e5e5e5;
+  font-weight: 600;
+}
+
+.print-mode .prose td {
+  padding: 8px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.print-mode .page-break {
+  page-break-before: always;
+}
+
+.print-mode .avoid-break {
+  page-break-inside: avoid;
+}
+
