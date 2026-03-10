@@ -21,8 +21,9 @@ import { useClients } from '../context/ClientContext';
 import { cn } from '../lib/utils';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import ReactMarkdown from 'react-markdown';
-import html2pdf from 'html2pdf.js';
 import { PortfolioRebalancing } from '../components/PortfolioRebalancing';
+import { generateStandardPDF } from '../lib/pdfUtils';
+import { ReportTemplate } from '../components/ReportTemplate';
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -294,28 +295,12 @@ export default function ClientDetails() {
   };
 
   const handleExportPDF = async () => {
-    const element = document.getElementById('report-content');
-    if (!element) return;
-    
     try {
-      // Dynamic import to ensure it loads correctly
-      const html2pdf = (await import('html2pdf.js')).default;
+      await generateStandardPDF(
+        'pdf-export-client',
+        `Relatorio_360_${client.name.replace(/\s+/g, '_')}.pdf`
+      );
       
-      // Add a temporary class to ensure backgrounds print correctly
-      element.classList.add('print-mode');
-      
-      const opt = {
-        margin:       [10, 10, 10, 10] as [number, number, number, number],
-        filename:     `Relatorio_360_${client.name.replace(/\s+/g, '_')}.pdf`,
-        image:        { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-      };
-      
-      await html2pdf().set(opt).from(element).save();
-      
-      element.classList.remove('print-mode');
-        
       // Save PDF export action to history
       await fetch(`/api/clients/${client.id}/history`, {
         method: 'POST',
@@ -335,7 +320,6 @@ export default function ClientDetails() {
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('Erro ao exportar PDF. Tente novamente.');
-      element.classList.remove('print-mode');
     }
   };
 
@@ -852,27 +836,115 @@ export default function ClientDetails() {
                       </ul>
                     </div>
                   </div>
-                  
-                  {/* PDF Footer Only visible in PDF */}
-                  <div className="hidden print:block p-8 border-t border-[#e5e5e5] mt-8 text-center">
-                    <div className="flex justify-center items-center space-x-6 mb-3">
-                      <div className="flex flex-col items-center">
-                        <span className="font-serif text-lg font-semibold tracking-widest text-[#1a1a1a] leading-none">ELITTE</span>
-                        <span className="font-sans text-[8px] uppercase tracking-[0.2em] text-[#737373] mt-1">Capital · Private</span>
-                      </div>
-                      <span className="text-[#e5e5e5] h-6 w-px bg-[#e5e5e5]"></span>
-                      <span className="font-bold text-[#1a1a1a] text-lg tracking-tight">necton</span>
-                    </div>
-                    <p className="text-[10px] text-[#737373] max-w-4xl leading-relaxed text-justify mx-auto">
-                      A Elitte Capital é uma empresa de assessoria de investimento devidamente registrada na Comissão de Valores Mobiliários (CVM), na forma da Resolução CVM 16/2021. Atuamos no mercado financeiro através da Necton Investimentos, instituição financeira autorizada a funcionar pelo Banco Central do Brasil. As informações contidas neste relatório são de caráter exclusivamente informativo e não constituem oferta, recomendação ou sugestão de investimento. Rentabilidade passada não é garantia de rentabilidade futura.
-                    </p>
-                  </div>
                 </div>
               )}
             </>
           )}
         </div>
       </div>
+      )}
+
+      {/* Hidden PDF Template */}
+      {portfolio.length > 0 && (
+        <ReportTemplate 
+          id="pdf-export-client" 
+          title={`Relatório Consolidado: ${client.name}`}
+          subtitle="Análise 360° e Posição de Carteira"
+        >
+          <div className="space-y-8">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-3 gap-4 avoid-break">
+              <div className="bg-white p-6 rounded-2xl border border-border">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Patrimônio Consolidado</p>
+                <p className="text-2xl font-serif font-semibold text-primary">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
+                </p>
+              </div>
+              <div className="bg-white p-6 rounded-2xl border border-border">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Total de Ativos</p>
+                <p className="text-2xl font-serif font-semibold text-primary">{portfolio.length}</p>
+              </div>
+              <div className="bg-white p-6 rounded-2xl border border-border">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Instituições</p>
+                <p className="text-2xl font-serif font-semibold text-primary">
+                  {new Set(portfolio.map(a => a.institution)).size}
+                </p>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="avoid-break">
+              <h3 className="text-xl font-serif font-semibold text-primary mb-4">Alocação Atual</h3>
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-[#737373] uppercase tracking-wider bg-[#f9fafb]">
+                  <tr>
+                    <th className="px-4 py-4 font-medium">Ativo</th>
+                    <th className="px-4 py-4 font-medium">Tipo</th>
+                    <th className="px-4 py-4 font-medium text-right">Qtd</th>
+                    <th className="px-4 py-4 font-medium text-right">Preço Médio</th>
+                    <th className="px-4 py-4 font-medium text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#e5e5e5]">
+                  {portfolio.map((asset, idx) => (
+                    <tr key={idx}>
+                      <td className="px-4 py-4">
+                        <div className="font-medium text-[#1a1a1a]">{asset.ticker}</div>
+                        <div className="text-xs text-[#737373]">{asset.name}</div>
+                      </td>
+                      <td className="px-4 py-4 text-[#737373]">{asset.type}</td>
+                      <td className="px-4 py-4 text-right text-[#1a1a1a]">{asset.quantity}</td>
+                      <td className="px-4 py-4 text-right text-[#737373]">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: asset.currency }).format(asset.averagePrice)}
+                      </td>
+                      <td className="px-4 py-4 text-right font-medium text-[#1a1a1a]">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: asset.currency }).format(asset.quantity * (asset.currentPrice || asset.averagePrice))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 360 Analysis Report */}
+            {analysis360 && (
+              <div className="space-y-6">
+                <div className="avoid-break">
+                  <h2 className="text-xl font-serif font-bold text-[#1a1a1a] mb-4 border-b border-[#e5e5e5] pb-2">Contexto Macroeconômico</h2>
+                  <div className="text-[#4b5563] text-sm text-justify">
+                    <ReactMarkdown>{analysis360.macroContext}</ReactMarkdown>
+                  </div>
+                </div>
+                
+                <div className="avoid-break">
+                  <h2 className="text-xl font-serif font-bold text-[#1a1a1a] mb-4 border-b border-[#e5e5e5] pb-2">Avaliação de Risco</h2>
+                  <div className="text-[#4b5563] text-sm text-justify">
+                    <ReactMarkdown>{analysis360.riskAssessment}</ReactMarkdown>
+                  </div>
+                </div>
+
+                <div className="avoid-break">
+                  <h2 className="text-xl font-serif font-bold text-[#1a1a1a] mb-4 border-b border-[#e5e5e5] pb-2">Recomendações de Hedge</h2>
+                  <div className="text-[#4b5563] text-sm text-justify">
+                    <ReactMarkdown>{analysis360.hedgeRecommendations}</ReactMarkdown>
+                  </div>
+                </div>
+                
+                <div className="avoid-break">
+                  <h2 className="text-xl font-serif font-bold text-[#1a1a1a] mb-4 border-b border-[#e5e5e5] pb-2">Atualizações Oficiais dos Ativos</h2>
+                  <ul className="space-y-3">
+                    {analysis360.assetNewsAndUpdates.map((update, idx) => (
+                      <li key={idx} className="bg-[#f9fafb] p-4 rounded-xl border border-[#e5e5e5]">
+                        <span className="font-semibold text-[#1a1a1a] block mb-1">{update.ticker}</span>
+                        <span className="text-sm text-[#737373]">{update.update}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+        </ReportTemplate>
       )}
     </div>
   );

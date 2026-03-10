@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { generateStandardPDF } from '../lib/pdfUtils';
+import { ReportTemplate } from '../components/ReportTemplate';
 
 // Rates from EFG Presentation (Page 14)
 const LOAN_RATES = {
@@ -145,23 +147,14 @@ export default function CreditProposal() {
 
   const handlePrint = async () => {
     setIsGeneratingPdf(true);
-    const element = document.getElementById('proposal-content');
-    const opt = {
-      margin: 10,
-      filename: `Proposta_Credito_${clientName.replace(/\s+/g, '_') || 'Cliente'}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] as any }
-    };
-
     try {
-      // @ts-ignore
-      const html2pdf = (await import('html2pdf.js')).default;
-      await html2pdf().set(opt).from(element).save();
+      await generateStandardPDF(
+        'pdf-export-credit',
+        `Proposta_Credito_${clientName.replace(/\s+/g, '_') || 'Cliente'}.pdf`
+      );
     } catch (error) {
       console.error('Error generating PDF:', error);
-      window.print();
+      alert('Erro ao gerar PDF. Verifique sua conexão.');
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -460,6 +453,171 @@ export default function CreditProposal() {
             </div>
           </div>
         </div>
+
+        {/* Hidden PDF Template */}
+        <ReportTemplate 
+          id="pdf-export-credit" 
+          title="Proposta de Crédito Estruturado"
+          subtitle="Lombard Loan & Carry Trade Strategy"
+        >
+          <div className="space-y-8">
+            {/* Client Info */}
+            <div className="grid grid-cols-2 gap-12 mb-8 avoid-break">
+              <div>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Cliente</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center text-gray-900">
+                    <User className="w-4 h-4 mr-3 text-gray-400" />
+                    <span className="font-medium">{clientName || 'Nome do Cliente'}</span>
+                  </div>
+                  <div className="flex items-center text-gray-900">
+                    <Building2 className="w-4 h-4 mr-3 text-gray-400" />
+                    <span>Perfil: {clientProfile}</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Detalhes da Proposta</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center text-gray-900">
+                    <Calendar className="w-4 h-4 mr-3 text-gray-400" />
+                    <span>{new Date(proposalDate).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                  <div className="flex items-center text-gray-900">
+                    <Landmark className="w-4 h-4 mr-3 text-gray-400" />
+                    <span>Banco EFG International</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Executive Summary */}
+            <div className="bg-gray-50 p-8 rounded-xl border border-gray-100 avoid-break">
+              <h3 className="text-lg font-serif font-semibold text-gray-900 mb-6">Estrutura da Operação</h3>
+              <div className="grid grid-cols-4 gap-8">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase mb-1">Aporte Inicial (BRL)</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {formatBRL(initialInvestmentBRL)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase mb-1">Câmbio Efetivo (Ida)</p>
+                  <p className="text-xl font-bold text-gray-900 flex items-center">
+                     {exchangeRateOut.toFixed(4)} <span className="text-xs font-normal text-gray-400 ml-2">({currency})</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase mb-1">Portfólio Offshore</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {formatFX(principalFX)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase mb-1">Capital Onshore (Volta)</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {formatBRL(capitalInBRL)}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-1">LTV: {(LTV * 100).toFixed(0)}% do Portfólio</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Financials */}
+            <div className="avoid-break">
+              <h3 className="text-lg font-serif font-semibold text-gray-900 mb-6">Projeção de Retorno (12 Meses)</h3>
+              <div className="overflow-hidden border border-gray-100 rounded-xl">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-500 uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="px-6 py-4 text-left">Componente</th>
+                      <th className="px-6 py-4 text-right">Valor Inicial</th>
+                      <th className="px-6 py-4 text-right">Taxa A.A.</th>
+                      <th className="px-6 py-4 text-right">Valor Projetado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    <tr>
+                      <td className="px-6 py-4 font-medium text-gray-900">Rendimento Portfólio ({currency})</td>
+                      <td className="px-6 py-4 text-right text-gray-400 font-mono text-xs">{formatFX(principalFX)}</td>
+                      <td className="px-6 py-4 text-right text-gray-500">{portfolioYield.toFixed(2)}%</td>
+                      <td className="px-6 py-4 text-right font-medium text-green-600">
+                        + {formatFX(offshoreYieldFX)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 font-medium text-gray-900">Juros do Empréstimo ({currency})</td>
+                      <td className="px-6 py-4 text-right text-gray-400 font-mono text-xs">{formatFX(loanAmountFX)}</td>
+                      <td className="px-6 py-4 text-right text-red-500">-{(loanRate || 0).toFixed(2)}%</td>
+                      <td className="px-6 py-4 text-right font-medium text-red-500">
+                        - {formatFX(loanInterestFX)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 font-medium text-gray-900">Custo de Estruturação ({currency})</td>
+                      <td className="px-6 py-4 text-right text-gray-400 font-mono text-xs">{formatFX(loanAmountFX)}</td>
+                      <td className="px-6 py-4 text-right text-red-500">-{structuringCostRate.toFixed(2)}%</td>
+                      <td className="px-6 py-4 text-right font-medium text-red-500">
+                        - {formatFX(structuringCostFX)}
+                      </td>
+                    </tr>
+                    <tr className="bg-gray-50/50">
+                      <td className="px-6 py-4 font-medium text-gray-900">Fluxo Líquido Offshore</td>
+                      <td className="px-6 py-4 text-right text-gray-400 font-mono text-xs">-</td>
+                      <td className="px-6 py-4 text-right text-gray-500">{(portfolioYield - (loanRate || 0) - structuringCostRate).toFixed(2)}%</td>
+                      <td className="px-6 py-4 text-right font-bold text-gray-900">
+                        = {formatFX(netOffshoreFlowFX)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 font-medium text-gray-900">Rendimento Onshore (Selic)</td>
+                      <td className="px-6 py-4 text-right text-gray-400 font-mono text-xs">{formatBRL(capitalInBRL)}</td>
+                      <td className="px-6 py-4 text-right text-gray-500">{(selicRate || 0).toFixed(2)}%</td>
+                      <td className="px-6 py-4 text-right font-medium text-green-600">
+                        + {formatBRL(onshoreYieldBRL)}
+                      </td>
+                    </tr>
+                    <tr className="bg-gray-900 text-white">
+                      <td className="px-6 py-4 font-bold" colSpan={2}>Retorno Total Consolidado (Est. BRL)</td>
+                      <td className="px-6 py-4 text-right font-bold">{(totalAnnualReturnPct || 0).toFixed(2)}%</td>
+                      <td className="px-6 py-4 text-right font-bold">
+                        {formatBRL(totalAnnualReturnBRL)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Consolidated Summary Box */}
+            <div className="bg-gray-900 text-white p-8 rounded-2xl shadow-xl avoid-break">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-serif font-bold mb-2">Resumo da Estratégia</h3>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest">Retorno Projetado vs Benchmark</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-4xl font-bold text-green-400">+{ (totalAnnualReturnPct - selicRate).toFixed(2) }%</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest">Alpha vs Selic</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-8 mt-8 pt-8 border-t border-white/10">
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase mb-1">Ganho Nominal Anual</p>
+                  <p className="text-2xl font-bold">{formatBRL(totalAnnualReturnBRL)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase mb-1">Retorno Total (%)</p>
+                  <p className="text-2xl font-bold">{totalAnnualReturnPct.toFixed(2)}% a.a.</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase mb-1">Custo Efetivo da Dívida</p>
+                  <p className="text-2xl font-bold text-red-400">{(loanRate + structuringCostRate).toFixed(2)}% a.a.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ReportTemplate>
       </div>
     );
   }

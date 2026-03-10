@@ -18,6 +18,8 @@ import {
   Check
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { ReportTemplate } from './ReportTemplate';
+import { generateStandardPDF } from '../lib/pdfUtils';
 import { cn } from '../lib/utils';
 import { InvestmentThesis } from '../types';
 
@@ -73,46 +75,8 @@ export function ThesisCard({
     setIsGeneratingPdf(true);
     
     try {
-      // @ts-ignore
-      const module = await import('html2pdf.js');
-      const html2pdf = (module.default || module) as any;
-
-      const element = document.getElementById(`pdf-content-${thesis.id}`);
-      if (!element) throw new Error('PDF content element not found');
-
-      // Clone the element to avoid scroll/overflow issues with html2canvas
-      const container = element.cloneNode(true) as HTMLElement;
-      container.style.position = 'absolute';
-      container.style.top = '0';
-      container.style.left = '0';
-      container.style.width = '210mm';
-      container.style.zIndex = '-9999';
-      container.style.backgroundColor = 'white';
-      container.style.height = 'auto';
-      container.style.overflow = 'visible';
-      container.style.display = 'block'; // Ensure it's visible for cloning
-      document.body.appendChild(container);
-
-      // Wait for browser to paint the cloned element
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const opt = {
-        margin: [15, 15, 15, 15],
-        filename: `Relatorio_Tese_${thesis.ticker}_${new Date().toISOString().split('T')[0]}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 1024, scrollY: 0 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      };
-
-      if (typeof html2pdf !== 'function') {
-        throw new Error('html2pdf library not loaded correctly');
-      }
-
-      await html2pdf().from(container).set(opt).save();
-      if (document.body.contains(container)) {
-        document.body.removeChild(container);
-      }
+      const filename = `Relatorio_Tese_${thesis.ticker}_${new Date().toISOString().split('T')[0]}.pdf`;
+      await generateStandardPDF(`pdf-content-${thesis.id}`, filename);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Erro ao gerar PDF. Verifique o console para mais detalhes.');
@@ -425,156 +389,119 @@ ${thesis.technicalAnalysis ? `ANÁLISE TÉCNICA\n${thesis.technicalAnalysis}\n\n
       )}
 
       {/* Hidden PDF Template */}
-      <div className="absolute top-0 left-0 w-[210mm] z-[-9999] pointer-events-none">
-        <div id={`pdf-content-${thesis.id}`} className="pdf-report bg-white font-sans text-[#1a1a1a] leading-relaxed">
-          {/* Header */}
-          <div className="flex justify-between items-start mb-12 border-b border-[#e5e5e5] pb-8">
-            <div className="flex items-center gap-6">
-              <div className="bg-[#1a1a1a] text-white p-4 rounded-xl flex flex-col items-center justify-center min-w-[80px]">
-                <span className="font-serif text-2xl font-bold tracking-tighter">GO</span>
-              </div>
-              <div>
-                <h1 className="font-serif text-4xl font-bold text-[#1a1a1a] leading-tight mb-1">Relatório de Análise</h1>
-                <p className="text-[10px] font-bold text-[#8c7b65] uppercase tracking-[0.3em]">Institutional Equity Intelligence</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="flex flex-col items-end mb-4">
-                <span className="font-serif text-2xl font-bold tracking-widest text-[#1a1a1a] leading-none">ELITTE</span>
-                <span className="font-sans text-[8px] uppercase tracking-[0.3em] text-[#737373] mt-1">Capital · Private</span>
-              </div>
-              <p className="text-[10px] text-[#d1d5db] font-bold tracking-widest">Capital · Private</p>
-            </div>
+      <ReportTemplate 
+        id={`pdf-content-${thesis.id}`}
+        title="Relatório de Análise"
+        subtitle="Institutional Equity Intelligence"
+      >
+        {/* Meta Info */}
+        <div className="flex flex-wrap gap-8 mb-12">
+          <div className="flex items-center gap-3 bg-[#f9fafb] px-4 py-2 rounded-lg border border-[#f3f4f6]">
+            <span className="w-2 h-2 rounded-full bg-[#8c7b65]"></span>
+            <span className="text-sm font-bold text-[#1a1a1a]">{thesis.ticker}</span>
           </div>
-
-          {/* Meta Info */}
-          <div className="flex flex-wrap gap-8 mb-12">
-            <div className="flex items-center gap-3 bg-[#f9fafb] px-4 py-2 rounded-lg border border-[#f3f4f6]">
-              <span className="w-2 h-2 rounded-full bg-[#8c7b65]"></span>
-              <span className="text-sm font-bold text-[#1a1a1a]">{thesis.ticker}</span>
-            </div>
-            <div className="flex items-center gap-3 bg-[#f9fafb] px-4 py-2 rounded-lg border border-[#f3f4f6]">
-              <span className="w-2 h-2 rounded-full bg-[#8c7b65]"></span>
-              <span className="text-sm font-bold text-[#1a1a1a]">TESE COMPLETA 360°</span>
-            </div>
-            <div className="flex items-center gap-3 bg-[#f9fafb] px-4 py-2 rounded-lg border border-[#f3f4f6]">
-              <span className="w-2 h-2 rounded-full bg-[#8c7b65]"></span>
-              <span className="text-sm font-bold text-[#1a1a1a]">{new Date().toLocaleDateString('pt-BR')}</span>
-            </div>
+          <div className="flex items-center gap-3 bg-[#f9fafb] px-4 py-2 rounded-lg border border-[#f3f4f6]">
+            <span className="w-2 h-2 rounded-full bg-[#8c7b65]"></span>
+            <span className="text-sm font-bold text-[#1a1a1a]">TESE COMPLETA 360°</span>
           </div>
-
-          <div className="grid grid-cols-3 gap-8 mb-12 text-[11px] text-[#737373] uppercase tracking-[0.2em] font-bold border-t border-[#f5f5f5] pt-8">
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#8c7b65]"></span>
-              <span>Gerado por: Demo User</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#8c7b65]"></span>
-              <span>Hora: {new Date().toLocaleTimeString('pt-BR')}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#8c7b65]"></span>
-              <span>ID: {Math.random().toString(36).substring(2, 10).toUpperCase()}</span>
-            </div>
-          </div>
-
-          {/* Summary Section */}
-          <div className="mb-12">
-            <h2 className="font-serif text-2xl font-bold text-[#1a1a1a] mb-6 border-b border-[#e5e5e5] pb-2">Resumo da Tese</h2>
-            <div className="bg-white p-8 rounded-2xl border border-[#e5e5e5] shadow-sm">
-              <div className="flex gap-4 mb-6">
-                <span className="text-[10px] font-bold px-3 py-1 rounded-full border border-[#dcfce7] bg-[#f0fdf4] text-[#15803d] uppercase">{thesis.category || 'Equity'}</span>
-                <span className="text-[10px] font-bold px-3 py-1 rounded-full border border-[#d1fae5] bg-[#ecfdf5] text-[#047857] uppercase">{thesis.status || 'Active'}</span>
-              </div>
-              <h3 className="text-3xl font-serif font-bold text-[#1a1a1a] mb-1">{thesis.title || thesis.ticker}</h3>
-              <p className="text-sm font-mono text-[#737373] uppercase tracking-widest mb-8">{thesis.ticker}</p>
-              
-              <div className="grid grid-cols-4 gap-6 p-6 bg-[#f9fafb] rounded-xl border border-[#f3f4f6] mb-8">
-                <div>
-                  <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Entrada</p>
-                  <p className="text-lg font-serif font-bold text-[#1a1a1a]">{currencySymbol} {entryPrice.toFixed(2)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Stop Loss</p>
-                  <p className="text-lg font-serif font-bold text-[#8a2e2e]">{currencySymbol} {exitPoint.toFixed(2)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Atual</p>
-                  <p className="text-lg font-serif font-bold text-[#1a1a1a]">{currencySymbol} {currentPrice.toFixed(2)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Alvo</p>
-                  <p className="text-lg font-serif font-bold text-[#2e654a]">{currencySymbol} {targetPrice.toFixed(2)}</p>
-                </div>
-              </div>
-
-              <p className="text-base text-[#4b5563] leading-relaxed text-justify">{thesis.description || ''}</p>
-            </div>
-          </div>
-
-          {/* Analysis Sections */}
-          {thesis.macroAnalysis && (
-            <div className="mb-12 page-break-before avoid-break">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-10 h-10 bg-[#f9fafb] rounded-full flex items-center justify-center border border-[#f3f4f6]">
-                  <span className="text-[#8c7b65]">●</span>
-                </div>
-                <h2 className="font-serif text-2xl font-bold text-[#1a1a1a]">Análise Macro</h2>
-              </div>
-              <div className="bg-white p-8 rounded-2xl border border-[#e5e5e5] text-[#4b5563] text-justify leading-relaxed prose prose-sm max-w-none">
-                <ReactMarkdown>{thesis.macroAnalysis}</ReactMarkdown>
-              </div>
-            </div>
-          )}
-
-          {thesis.fundamentalAnalysis && (
-            <div className="mb-12 avoid-break">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-10 h-10 bg-[#f9fafb] rounded-full flex items-center justify-center border border-[#f3f4f6]">
-                  <span className="text-[#8c7b65]">■</span>
-                </div>
-                <h2 className="font-serif text-2xl font-bold text-[#1a1a1a]">Análise Fundamentalista</h2>
-              </div>
-              <div className="bg-white p-8 rounded-2xl border border-[#e5e5e5] text-[#4b5563] text-justify leading-relaxed prose prose-sm max-w-none">
-                <ReactMarkdown>{thesis.fundamentalAnalysis}</ReactMarkdown>
-              </div>
-            </div>
-          )}
-
-          {thesis.technicalAnalysis && (
-            <div className="mb-12 avoid-break">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-10 h-10 bg-[#f9fafb] rounded-full flex items-center justify-center border border-[#f3f4f6]">
-                  <span className="text-[#8c7b65]">▲</span>
-                </div>
-                <h2 className="font-serif text-2xl font-bold text-[#1a1a1a]">Análise Técnica</h2>
-              </div>
-              <div className="bg-white p-8 rounded-2xl border border-[#e5e5e5] text-[#4b5563] text-justify leading-relaxed prose prose-sm max-w-none">
-                <ReactMarkdown>{thesis.technicalAnalysis}</ReactMarkdown>
-              </div>
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="mt-20 pt-10 border-t border-[#e5e5e5] text-[10px] text-[#737373] text-justify">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex flex-col items-center opacity-40">
-                <span className="font-serif text-lg font-bold tracking-widest text-[#1a1a1a] leading-none">ELITTE</span>
-                <span className="font-sans text-[6px] uppercase tracking-[0.3em] text-[#737373] mt-1">Capital · Private</span>
-              </div>
-              <div className="text-[10px] font-bold text-[#d1d5db] tracking-[0.2em]">{new Date().getFullYear()}</div>
-            </div>
-            <div className="bg-[#f9fafb] p-6 rounded-xl border border-[#f3f4f6]">
-              <p className="font-bold text-[#1a1a1a] mb-3 uppercase tracking-widest text-[9px]">Disclaimer Legal</p>
-              <p className="leading-relaxed opacity-80">
-                Este material tem caráter meramente informativo e não deve ser considerado como recomendação de investimento, oferta de compra ou venda de qualquer ativo financeiro. 
-                A Elitte Capital não se responsabiliza por decisões tomadas com base nestas informações. Rentabilidade passada não garante rentabilidade futura. 
-                As informações contidas neste relatório foram obtidas de fontes consideradas confiáveis, mas sua precisão e completude não são garantidas. 
-              </p>
-            </div>
+          <div className="flex items-center gap-3 bg-[#f9fafb] px-4 py-2 rounded-lg border border-[#f3f4f6]">
+            <span className="w-2 h-2 rounded-full bg-[#8c7b65]"></span>
+            <span className="text-sm font-bold text-[#1a1a1a]">{new Date().toLocaleDateString('pt-BR')}</span>
           </div>
         </div>
-      </div>
+
+        <div className="grid grid-cols-3 gap-8 mb-12 text-[11px] text-[#737373] uppercase tracking-[0.2em] font-bold border-t border-[#f5f5f5] pt-8">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#8c7b65]"></span>
+            <span>Gerado por: Demo User</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#8c7b65]"></span>
+            <span>Hora: {new Date().toLocaleTimeString('pt-BR')}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#8c7b65]"></span>
+            <span>ID: {Math.random().toString(36).substring(2, 10).toUpperCase()}</span>
+          </div>
+        </div>
+
+        {/* Summary Section */}
+        <div className="mb-12">
+          <h2 className="font-serif text-2xl font-bold text-[#1a1a1a] mb-6 border-b border-[#e5e5e5] pb-2">Resumo da Tese</h2>
+          <div className="bg-white p-8 rounded-2xl border border-[#e5e5e5] shadow-sm">
+            <div className="flex gap-4 mb-6">
+              <span className="text-[10px] font-bold px-3 py-1 rounded-full border border-[#dcfce7] bg-[#f0fdf4] text-[#15803d] uppercase">{thesis.category || 'Equity'}</span>
+              <span className="text-[10px] font-bold px-3 py-1 rounded-full border border-[#d1fae5] bg-[#ecfdf5] text-[#047857] uppercase">{thesis.status || 'Active'}</span>
+            </div>
+            <h3 className="text-3xl font-serif font-bold text-[#1a1a1a] mb-1">{thesis.title || thesis.ticker}</h3>
+            <p className="text-sm font-mono text-[#737373] uppercase tracking-widest mb-8">{thesis.ticker}</p>
+            
+            <div className="grid grid-cols-4 gap-6 p-6 bg-[#f9fafb] rounded-xl border border-[#f3f4f6] mb-8">
+              <div>
+                <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Entrada</p>
+                <p className="text-lg font-serif font-bold text-[#1a1a1a]">{currencySymbol} {entryPrice.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Stop Loss</p>
+                <p className="text-lg font-serif font-bold text-[#8a2e2e]">{currencySymbol} {exitPoint.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Atual</p>
+                <p className="text-lg font-serif font-bold text-[#1a1a1a]">{currencySymbol} {currentPrice.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Alvo</p>
+                <p className="text-lg font-serif font-bold text-[#2e654a]">{currencySymbol} {targetPrice.toFixed(2)}</p>
+              </div>
+            </div>
+
+            <p className="text-base text-[#4b5563] leading-relaxed text-justify">{thesis.description || ''}</p>
+          </div>
+        </div>
+
+        {/* Analysis Sections */}
+        {thesis.macroAnalysis && (
+          <div className="mb-12 page-break-before avoid-break">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-10 h-10 bg-[#f9fafb] rounded-full flex items-center justify-center border border-[#f3f4f6]">
+                <span className="text-[#8c7b65]">●</span>
+              </div>
+              <h2 className="font-serif text-2xl font-bold text-[#1a1a1a]">Análise Macro</h2>
+            </div>
+            <div className="bg-white p-8 rounded-2xl border border-[#e5e5e5] text-[#4b5563] text-justify leading-relaxed prose prose-sm max-w-none">
+              <ReactMarkdown>{thesis.macroAnalysis}</ReactMarkdown>
+            </div>
+          </div>
+        )}
+
+        {thesis.fundamentalAnalysis && (
+          <div className="mb-12 avoid-break">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-10 h-10 bg-[#f9fafb] rounded-full flex items-center justify-center border border-[#f3f4f6]">
+                <span className="text-[#8c7b65]">■</span>
+              </div>
+              <h2 className="font-serif text-2xl font-bold text-[#1a1a1a]">Análise Fundamentalista</h2>
+            </div>
+            <div className="bg-white p-8 rounded-2xl border border-[#e5e5e5] text-[#4b5563] text-justify leading-relaxed prose prose-sm max-w-none">
+              <ReactMarkdown>{thesis.fundamentalAnalysis}</ReactMarkdown>
+            </div>
+          </div>
+        )}
+
+        {thesis.technicalAnalysis && (
+          <div className="mb-12 avoid-break">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-10 h-10 bg-[#f9fafb] rounded-full flex items-center justify-center border border-[#f3f4f6]">
+                <span className="text-[#8c7b65]">▲</span>
+              </div>
+              <h2 className="font-serif text-2xl font-bold text-[#1a1a1a]">Análise Técnica</h2>
+            </div>
+            <div className="bg-white p-8 rounded-2xl border border-[#e5e5e5] text-[#4b5563] text-justify leading-relaxed prose prose-sm max-w-none">
+              <ReactMarkdown>{thesis.technicalAnalysis}</ReactMarkdown>
+            </div>
+          </div>
+        )}
+      </ReportTemplate>
     </>
   );
 }
