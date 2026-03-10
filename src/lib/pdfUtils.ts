@@ -7,17 +7,22 @@ export const generateStandardPDF = async (elementId: string, filename: string) =
     return;
   }
 
+  // A magia: Fica no topo da página, mas invisível (opacity: 0) e intocável
   const offScreenContainer = document.createElement('div');
   offScreenContainer.style.position = 'absolute';
-  offScreenContainer.style.left = '-9999px'; 
   offScreenContainer.style.top = '0';
+  offScreenContainer.style.left = '0';
+  offScreenContainer.style.width = '794px'; // Largura exata de uma folha A4 a 96dpi
+  offScreenContainer.style.opacity = '0';
+  offScreenContainer.style.pointerEvents = 'none';
+  offScreenContainer.style.zIndex = '-1';
   document.body.appendChild(offScreenContainer);
 
   const element = originalElement.cloneNode(true) as HTMLElement;
   
-  // CORREÇÃO DE LARGURA: 800px exatos e sem limite de altura
+  // CORREÇÃO DE LARGURA: 794px exatos e sem limite de altura
   element.style.display = 'block'; 
-  element.style.width = '800px';
+  element.style.width = '794px';
   element.style.backgroundColor = '#ffffff'; 
   element.style.color = '#1a1a1a';
   element.classList.add('pdf-report-active');
@@ -27,17 +32,17 @@ export const generateStandardPDF = async (elementId: string, filename: string) =
   await new Promise(resolve => setTimeout(resolve, 800));
 
   const opt = {
-    margin: [15, 15, 20, 15],
+    margin: [15, 15, 20, 15] as [number, number, number, number],
     filename: filename,
-    image: { type: 'jpeg', quality: 1 },
+    image: { type: 'jpeg' as const, quality: 1 },
     html2canvas: { 
       scale: 2, 
       useCORS: true, 
       logging: false,
-      windowWidth: 800, // Sincronizado com o width do elemento
+      windowWidth: 794, // Sincronizado com o width do elemento
       scrollY: 0
     },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
     pagebreak: { mode: ['css', 'legacy'] }
   };
 

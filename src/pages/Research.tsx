@@ -593,20 +593,20 @@ export default function Research() {
                   <div className="avoid-break mb-8">
                     <h2 className="font-serif text-2xl font-bold text-[#1a1a1a] mb-4 border-b border-[#e5e5e5] pb-2">Resumo da Tese</h2>
                     
-                    <div className="grid grid-cols-4 gap-6 p-6 bg-[#f9fafb] rounded-xl border border-[#f3f4f6] mb-6">
-                      <div>
+                    <div className="flex justify-between items-center gap-6 p-6 bg-[#f9fafb] rounded-xl border border-[#f3f4f6] mb-6">
+                      <div className="flex-1">
                         <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Entrada</p>
                         <p className="text-xl font-serif font-bold text-[#1a1a1a]">{thesisData.currency} {thesisData.entryPoint.toFixed(2)}</p>
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Stop Loss</p>
                         <p className="text-xl font-serif font-bold text-[#8a2e2e]">{thesisData.currency} {thesisData.exitPoint.toFixed(2)}</p>
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Atual</p>
                         <p className="text-xl font-serif font-bold text-[#1a1a1a]">{thesisData.currency} {thesisData.currentPrice.toFixed(2)}</p>
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Alvo</p>
                         <p className="text-xl font-serif font-bold text-[#2e654a]">{thesisData.currency} {thesisData.targetPrice.toFixed(2)}</p>
                       </div>

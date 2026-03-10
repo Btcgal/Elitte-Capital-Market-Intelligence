@@ -16,8 +16,8 @@ export function ReportTemplate({ id, title, subtitle, ticker, children }: Report
 
   return (
     <div className="hidden">
-      {/* CORREÇÃO: Removido flexbox e min-h. Largura fixa em 800px */}
-      <div id={id} className="bg-white text-[#1a1a1a] p-10 font-sans" style={{ width: '800px', boxSizing: 'border-box' }}>
+      {/* CORREÇÃO: Removido flexbox e min-h. Largura fixa em 794px */}
+      <div id={id} className="bg-white text-[#1a1a1a] p-10 font-sans" style={{ width: '794px', boxSizing: 'border-box' }}>
         
         {/* CABEÇALHO INSTITUCIONAL */}
         <div className="flex justify-between items-center mb-8 border-b border-[#e5e5e5] pb-8 avoid-break">
