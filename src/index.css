@@ -202,11 +202,10 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   page-break-inside: avoid;
 }
 
-/* Adicione no final do seu src/index.css */
-
+/* Estilos para o PDF Oficial */
 .pdf-report-active {
-  font-size: 12pt !important;
-  line-height: 1.6 !important;
+  font-size: 12pt;
+  line-height: 1.6;
 }
 
 .avoid-break {
@@ -217,7 +216,9 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   page-break-before: always !important;
 }
 
-.pdf-report-active h2, .pdf-report-active h3, .pdf-report-active h4 {
+.pdf-report-active h2, 
+.pdf-report-active h3, 
+.pdf-report-active h4 {
   color: #1a1a1a !important;
   border-bottom: 1px solid #e5e5e5 !important;
   padding-bottom: 5px !important;
@@ -226,8 +227,9 @@ h1, h2, h3, h4, h5, h6, .font-serif {
   page-break-after: avoid !important;
 }
 
-.pdf-report-active p, .pdf-report-active li {
-  color: #1a1a1a !important;
+.pdf-report-active p, 
+.pdf-report-active li {
+  color: #4b5563 !important; /* Cor cinza escuro, ótimo contraste para leitura */
   margin-bottom: 15px !important;
   text-align: justify !important;
 }

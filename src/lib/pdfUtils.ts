@@ -7,36 +7,34 @@ export const generateStandardPDF = async (elementId: string, filename: string) =
     return;
   }
 
+  const offScreenContainer = document.createElement('div');
+  offScreenContainer.style.position = 'absolute';
+  offScreenContainer.style.left = '-9999px'; 
+  offScreenContainer.style.top = '0';
+  document.body.appendChild(offScreenContainer);
+
   const element = originalElement.cloneNode(true) as HTMLElement;
   
-  // Forçamos estilos em linha no clone para a fotografia sair perfeita
-  element.style.position = 'absolute';
-  element.style.top = '0';
-  element.style.left = '0';
-  element.style.width = '210mm';
-  element.style.zIndex = '-9999';
+  // CORREÇÃO DE LARGURA: 800px exatos e sem limite de altura
+  element.style.display = 'block'; 
+  element.style.width = '800px';
   element.style.backgroundColor = '#ffffff'; 
   element.style.color = '#1a1a1a';
-  element.style.height = 'auto';
-  element.style.overflow = 'visible';
-  element.style.display = 'block'; 
-  
   element.classList.add('pdf-report-active');
 
-  document.body.appendChild(element);
+  offScreenContainer.appendChild(element);
 
-  // Delay para carregar fontes e renderizar gráficos
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise(resolve => setTimeout(resolve, 800));
 
   const opt = {
-    margin: [15, 15, 20, 15] as [number, number, number, number],
+    margin: [15, 15, 20, 15],
     filename: filename,
-    image: { type: 'jpeg' as const, quality: 1 },
+    image: { type: 'jpeg', quality: 1 },
     html2canvas: { 
       scale: 2, 
       useCORS: true, 
       logging: false,
-      windowWidth: 1024,
+      windowWidth: 800, // Sincronizado com o width do elemento
       scrollY: 0
     },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -44,13 +42,13 @@ export const generateStandardPDF = async (elementId: string, filename: string) =
   };
 
   try {
-    await html2pdf().from(element).set(opt).save();
+    await html2pdf().set(opt).from(element).save();
   } catch (error) {
     console.error('Erro na geração do PDF:', error);
-    throw error;
+    alert('Erro ao gerar o documento.');
   } finally {
-    if (document.body.contains(element)) {
-      document.body.removeChild(element);
+    if (document.body.contains(offScreenContainer)) {
+      document.body.removeChild(offScreenContainer);
     }
   }
 };

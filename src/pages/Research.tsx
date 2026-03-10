@@ -582,48 +582,69 @@ export default function Research() {
       {(report || thesisData) && (
         <ReportTemplate 
           id="pdf-export-research" 
-          title={`Análise de Ativo: ${ticker}`}
+          title={thesisData ? `Tese: ${thesisData.name}` : `Relatório: ${ticker}`}
           subtitle={frameworks.find(f => f.id === activeFramework)?.title}
+          ticker={ticker}
         >
-          <div className="space-y-6">
+          <div className="space-y-8">
              {thesisData ? (
                <>
+                  {/* Apenas a caixa de resumo ganha avoid-break para não quebrar a grelha de preços ao meio */}
                   <div className="avoid-break mb-8">
-                    <h2>Resumo da Tese</h2>
-                    <p>{thesisData.thesisSummary}</p>
-                    <div className="mt-4 flex gap-4 text-sm">
-                      <p><strong>Entrada:</strong> {thesisData.currency} {thesisData.entryPoint}</p>
-                      <p><strong>Alvo:</strong> {thesisData.currency} {thesisData.targetPrice}</p>
-                      <p><strong>Stop:</strong> {thesisData.currency} {thesisData.exitPoint}</p>
+                    <h2 className="font-serif text-2xl font-bold text-[#1a1a1a] mb-4 border-b border-[#e5e5e5] pb-2">Resumo da Tese</h2>
+                    
+                    <div className="grid grid-cols-4 gap-6 p-6 bg-[#f9fafb] rounded-xl border border-[#f3f4f6] mb-6">
+                      <div>
+                        <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Entrada</p>
+                        <p className="text-xl font-serif font-bold text-[#1a1a1a]">{thesisData.currency} {thesisData.entryPoint.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Stop Loss</p>
+                        <p className="text-xl font-serif font-bold text-[#8a2e2e]">{thesisData.currency} {thesisData.exitPoint.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Atual</p>
+                        <p className="text-xl font-serif font-bold text-[#1a1a1a]">{thesisData.currency} {thesisData.currentPrice.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-[#737373] uppercase tracking-wider mb-1">Alvo</p>
+                        <p className="text-xl font-serif font-bold text-[#2e654a]">{thesisData.currency} {thesisData.targetPrice.toFixed(2)}</p>
+                      </div>
                     </div>
+
+                    <p className="text-base text-[#4b5563] leading-relaxed text-justify">{thesisData.thesisSummary}</p>
                   </div>
+
+                  {/* TEXTOS LONGOS: Sem avoid-break! Deixe o PDF quebrar a página naturalmente no meio dos parágrafos se for necessário. */}
                   {visibility.macro && thesisData.macroAnalysis && (
-                    <div className="avoid-break mb-8">
-                      <h2>Análise Macroeconômica</h2>
-                      <div className="text-[#4b5563] text-sm">
+                    <div className="mb-8">
+                      <h2 className="font-serif text-2xl font-bold text-[#1a1a1a] mb-4 border-b border-[#e5e5e5] pb-2">Análise Macroeconômica</h2>
+                      <div className="text-[#4b5563] text-[11pt] leading-relaxed text-justify prose prose-sm max-w-none">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{thesisData.macroAnalysis}</ReactMarkdown>
                       </div>
                     </div>
                   )}
+
                   {visibility.fundamental && thesisData.fundamentalAnalysis && (
-                    <div className="avoid-break mb-8">
-                      <h2>Análise Fundamentalista</h2>
-                      <div className="text-[#4b5563] text-sm">
+                    <div className="mb-8">
+                      <h2 className="font-serif text-2xl font-bold text-[#1a1a1a] mb-4 border-b border-[#e5e5e5] pb-2">Análise Fundamentalista</h2>
+                      <div className="text-[#4b5563] text-[11pt] leading-relaxed text-justify prose prose-sm max-w-none">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{thesisData.fundamentalAnalysis}</ReactMarkdown>
                       </div>
                     </div>
                   )}
+
                   {visibility.technical && thesisData.technicalAnalysis && (
-                    <div className="avoid-break mb-8">
-                      <h2>Análise Técnica</h2>
-                      <div className="text-[#4b5563] text-sm">
+                    <div className="mb-8">
+                      <h2 className="font-serif text-2xl font-bold text-[#1a1a1a] mb-4 border-b border-[#e5e5e5] pb-2">Análise Técnica</h2>
+                      <div className="text-[#4b5563] text-[11pt] leading-relaxed text-justify prose prose-sm max-w-none">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{thesisData.technicalAnalysis}</ReactMarkdown>
                       </div>
                     </div>
                   )}
                </>
              ) : (
-                <div className="prose prose-sm max-w-none text-[#1a1a1a]">
+                <div className="prose prose-[11pt] max-w-none text-[#4b5563] text-justify leading-relaxed">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{report}</ReactMarkdown>
                 </div>
              )}
