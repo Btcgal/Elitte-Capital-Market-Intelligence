@@ -36,3 +36,14 @@ export interface InvestmentThesis {
   technicalAnalysis?: string;
   gradualBuys?: { price: number; percentage: number }[];
 }
+
+export interface Portfolio {
+  id?: string;
+  name: string;
+  value: number;
+  assets?: {
+    ticker: string;
+    allocation: number;
+    performance: number;
+  }[];
+}

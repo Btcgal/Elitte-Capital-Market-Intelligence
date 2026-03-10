@@ -4,9 +4,15 @@ import { Calendar, Newspaper, Clock, Globe2, Bot, Loader2, ChevronRight, AlertTr
 import { MacroPanel, MacroIndicator } from '../components/MacroPanel';
 import { ThesisCard } from '../components/ThesisCard';
 import { MarketTicker } from '../components/MarketTicker';
+import { PortfolioMonthlyReport } from '../reports';
 import { chatWithAssistant } from '../services/gemini';
 import { cn } from '../lib/utils';
-import { InvestmentThesis } from '../types';
+import { InvestmentThesis, Portfolio } from '../types';
+
+const mockPortfolio: Portfolio = {
+  name: "Carteira Alpha",
+  value: 2450000,
+};
 
 const initialIndicators: MacroIndicator[] = [
   { name: 'Selic', value: '10.50%', change: 'Mantida', region: 'BR' },
@@ -262,6 +268,14 @@ export default function Dashboard() {
             <ThesisCard key={thesis.id} thesis={thesis} />
           ))}
         </div>
+      </div>
+
+      {/* Report Section */}
+      <div className="pt-8 border-t border-border">
+        <div className="flex justify-between items-end border-b border-border pb-6 mb-8">
+          <h2 className="text-2xl font-serif font-semibold text-primary tracking-tight">Relatórios Gerenciais</h2>
+        </div>
+        <PortfolioMonthlyReport portfolio={mockPortfolio} />
       </div>
     </div>
   );
