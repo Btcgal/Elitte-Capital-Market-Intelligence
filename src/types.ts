@@ -21,7 +21,7 @@ export interface InvestmentThesis {
   description: string;
   category: 'Macro' | 'Equity' | 'Fixed Income' | 'Crypto' | 'Alternative';
   conviction: 'High' | 'Medium' | 'Low';
-  status: 'Draft' | 'Active' | 'Closed';
+  status: 'Draft' | 'Active' | 'Closed' | 'compra_gradual' | 'posicao_cheia' | 'venda_programada' | 'encerrada' | 'aguardando_ponto' | 'venda';
   targetPrice?: number;
   entryPrice?: number;
   exitPoint?: number;
@@ -30,6 +30,7 @@ export interface InvestmentThesis {
   createdAt: string;
   updatedAt: string;
   tags: string[];
+  source?: 'Personal' | 'Bank' | 'BTG';
   macroAnalysis?: string;
   fundamentalAnalysis?: string;
   technicalAnalysis?: string;

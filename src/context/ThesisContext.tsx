@@ -55,13 +55,27 @@ export function ThesisProvider({ children }: { children: React.ReactNode }) {
   }, [theses]);
 
   const addThesis = (thesisData: Omit<InvestmentThesis, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newThesis: InvestmentThesis = {
-      ...thesisData,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    setTheses(prev => [newThesis, ...prev]);
+    const existingIndex = theses.findIndex(t => t.ticker === thesisData.ticker);
+    
+    if (existingIndex !== -1) {
+      // Consolidate: update existing thesis
+      const updatedTheses = [...theses];
+      updatedTheses[existingIndex] = {
+        ...updatedTheses[existingIndex],
+        ...thesisData,
+        updatedAt: new Date().toISOString()
+      };
+      setTheses(updatedTheses);
+    } else {
+      // Add new thesis
+      const newThesis: InvestmentThesis = {
+        ...thesisData,
+        id: Math.random().toString(36).substr(2, 9),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      setTheses(prev => [newThesis, ...prev]);
+    }
   };
 
   const updateThesis = (updatedThesis: InvestmentThesis) => {

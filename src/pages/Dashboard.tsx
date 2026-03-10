@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Calendar, Newspaper, Clock, Globe2, Bot, Loader2, ChevronRight, AlertTriangle, TrendingUp } from 'lucide-react';
 import { MacroPanel, MacroIndicator } from '../components/MacroPanel';
-import { ThesisCard, ThesisData } from '../components/ThesisCard';
+import { ThesisCard } from '../components/ThesisCard';
 import { MarketTicker } from '../components/MarketTicker';
 import { chatWithAssistant } from '../services/gemini';
 import { cn } from '../lib/utils';
+import { InvestmentThesis } from '../types';
 
 const initialIndicators: MacroIndicator[] = [
   { name: 'Selic', value: '10.50%', change: 'Mantida', region: 'BR' },
@@ -14,32 +15,34 @@ const initialIndicators: MacroIndicator[] = [
   { name: 'CPI', value: '3.10%', change: '-0.1%', region: 'US' },
 ];
 
-const mockTheses: ThesisData[] = [
+const mockTheses: any[] = [
   {
     id: '1',
     ticker: 'AAPL',
-    brTicker: 'AAPL34',
     name: 'Apple Inc.',
-    type: 'internacional',
-    status: 'compra_gradual',
-    entryPoint: 170.50,
+    title: 'Apple Inc. Growth',
+    category: 'Equity',
+    status: 'Active',
+    entryPrice: 170.50,
     exitPoint: 150.00,
     currentPrice: 185.20,
     targetPrice: 210.00,
-    thesis: 'A tese de investimento na Apple baseia-se na expansão contínua do seu ecossistema de serviços e na adoção de IA em seus dispositivos. Acreditamos que o ciclo de atualização do iPhone e a monetização da base instalada sustentarão o crescimento das margens.',
-    gradualBuys: [{ price: 170, percentage: 30 }, { price: 165, percentage: 30 }, { price: 160, percentage: 40 }]
+    description: 'A tese de investimento na Apple baseia-se na expansão contínua do seu ecossistema de serviços e na adoção de IA em seus dispositivos.',
+    tags: ['Tech', 'IA']
   },
   {
     id: '2',
     ticker: 'PETR4',
     name: 'Petrobras',
-    type: 'acao',
-    status: 'posicao_cheia',
-    entryPoint: 32.00,
+    title: 'Petrobras Dividends',
+    category: 'Equity',
+    status: 'Active',
+    entryPrice: 32.00,
     exitPoint: 28.00,
     currentPrice: 38.50,
     targetPrice: 45.00,
-    thesis: 'Forte geração de caixa e política de dividendos atrativa. O cenário de petróleo acima de $80 suporta a rentabilidade, enquanto o desconto em relação aos pares globais oferece margem de segurança.'
+    description: 'Forte geração de caixa e política de dividendos atrativa.',
+    tags: ['Oil', 'Dividends']
   }
 ];
 

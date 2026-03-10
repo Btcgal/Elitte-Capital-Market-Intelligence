@@ -8,7 +8,7 @@ interface LogoProps {
 
 export function Logo({ className, variant = 'default', size = 'md' }: LogoProps) {
   const textColor = variant === 'light' ? 'text-white' : 'text-[#1a1a1a]';
-  const subTextColor = variant === 'light' ? 'text-white/70' : 'text-[#737373]';
+  const subTextColor = variant === 'light' ? 'text-[rgba(255,255,255,0.7)]' : 'text-[#737373]';
   
   const sizeClasses = {
     sm: { title: 'text-lg', subtitle: 'text-[6px] tracking-[0.2em]' },

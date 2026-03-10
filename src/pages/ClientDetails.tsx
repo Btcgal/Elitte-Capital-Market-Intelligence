@@ -784,7 +784,7 @@ export default function ClientDetails() {
                   
                   <div className="w-full md:w-2/3 max-h-[400px] overflow-y-auto custom-scrollbar">
                     <table className="w-full text-sm text-left relative">
-                      <thead className="text-xs text-muted-foreground uppercase tracking-wider bg-secondary/50 sticky top-0 z-10">
+                      <thead className="text-xs text-[#737373] uppercase tracking-wider bg-[rgba(245,242,237,0.5)] sticky top-0 z-10">
                         <tr>
                           <th className="px-4 py-4 font-medium">Ativo</th>
                           <th className="px-4 py-4 font-medium">Tipo</th>
@@ -794,22 +794,22 @@ export default function ClientDetails() {
                           <th className="px-4 py-4 font-medium">Origem</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border">
+                      <tbody className="divide-y divide-[#e5e5e5]">
                         {portfolio.map((asset, idx) => (
-                          <tr key={idx} className="hover:bg-secondary/30 transition-colors">
+                          <tr key={idx} className="hover:bg-[rgba(245,242,237,0.3)] transition-colors">
                             <td className="px-4 py-4">
-                              <div className="font-medium text-primary">{asset.ticker}</div>
-                              <div className="text-xs text-muted-foreground truncate max-w-[150px]">{asset.name}</div>
+                              <div className="font-medium text-[#1a1a1a]">{asset.ticker}</div>
+                              <div className="text-xs text-[#737373] truncate max-w-[150px]">{asset.name}</div>
                             </td>
-                            <td className="px-4 py-4 text-muted-foreground">{asset.type}</td>
-                            <td className="px-4 py-4 text-right text-primary">{asset.quantity}</td>
-                            <td className="px-4 py-4 text-right text-muted-foreground">
+                            <td className="px-4 py-4 text-[#737373]">{asset.type}</td>
+                            <td className="px-4 py-4 text-right text-[#1a1a1a]">{asset.quantity}</td>
+                            <td className="px-4 py-4 text-right text-[#737373]">
                               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: asset.currency }).format(asset.averagePrice)}
                             </td>
-                            <td className="px-4 py-4 text-right font-medium text-primary">
+                            <td className="px-4 py-4 text-right font-medium text-[#1a1a1a]">
                               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: asset.currency }).format(asset.quantity * (asset.currentPrice || asset.averagePrice))}
                             </td>
-                            <td className="px-4 py-4 text-muted-foreground text-xs">{asset.institution}</td>
+                            <td className="px-4 py-4 text-[#737373] text-xs">{asset.institution}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -820,33 +820,33 @@ export default function ClientDetails() {
 
               {/* 360 Analysis Report */}
               {analysis360 && (
-                <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden mt-8">
-                  <div className="p-8 border-b border-border bg-secondary/30">
-                    <h3 className="text-2xl font-serif font-semibold text-primary tracking-tight">Relatório 360° Consolidado</h3>
-                    <p className="text-sm text-muted-foreground mt-2 uppercase tracking-widest">Análise Macroeconômica e Risco</p>
+                <div className="bg-white rounded-2xl border border-[#e5e5e5] shadow-sm overflow-hidden mt-8">
+                  <div className="p-8 border-b border-[#e5e5e5] bg-[rgba(245,242,237,0.3)]">
+                    <h3 className="text-2xl font-serif font-semibold text-[#1a1a1a] tracking-tight">Relatório 360° Consolidado</h3>
+                    <p className="text-sm text-[#737373] mt-2 uppercase tracking-widest">Análise Macroeconômica e Risco</p>
                   </div>
-                  <div className="p-8 space-y-8 prose prose-sm max-w-none prose-headings:font-serif prose-headings:text-primary prose-a:text-accent prose-p:text-muted-foreground prose-li:text-muted-foreground">
+                  <div className="p-8 space-y-8 prose prose-sm max-w-none prose-headings:font-serif prose-headings:text-[#1a1a1a] prose-a:text-[#8c7b65] prose-p:text-[#737373] prose-li:text-[#737373]">
                     <div>
-                      <h4 className="text-lg font-semibold border-b border-border pb-2 mb-4">Contexto Macroeconômico</h4>
+                      <h4 className="text-lg font-semibold border-b border-[#e5e5e5] pb-2 mb-4">Contexto Macroeconômico</h4>
                       <p>{analysis360.macroContext}</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div>
-                        <h4 className="text-lg font-semibold border-b border-border pb-2 mb-4">Avaliação de Risco</h4>
+                        <h4 className="text-lg font-semibold border-b border-[#e5e5e5] pb-2 mb-4">Avaliação de Risco</h4>
                         <p>{analysis360.riskAssessment}</p>
                       </div>
                       <div>
-                        <h4 className="text-lg font-semibold border-b border-border pb-2 mb-4">Recomendações de Hedge</h4>
+                        <h4 className="text-lg font-semibold border-b border-[#e5e5e5] pb-2 mb-4">Recomendações de Hedge</h4>
                         <p>{analysis360.hedgeRecommendations}</p>
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold border-b border-border pb-2 mb-4">Atualizações Oficiais dos Ativos</h4>
+                      <h4 className="text-lg font-semibold border-b border-[#e5e5e5] pb-2 mb-4">Atualizações Oficiais dos Ativos</h4>
                       <ul className="space-y-3">
                         {analysis360.assetNewsAndUpdates.map((update, idx) => (
-                          <li key={idx} className="bg-secondary/30 p-4 rounded-xl border border-border/50">
-                            <span className="font-semibold text-primary block mb-1">{update.ticker}</span>
-                            <span className="text-sm text-muted-foreground">{update.update}</span>
+                          <li key={idx} className="bg-[rgba(245,242,237,0.3)] p-4 rounded-xl border border-[rgba(229,229,229,0.5)]">
+                            <span className="font-semibold text-[#1a1a1a] block mb-1">{update.ticker}</span>
+                            <span className="text-sm text-[#737373]">{update.update}</span>
                           </li>
                         ))}
                       </ul>
@@ -854,16 +854,16 @@ export default function ClientDetails() {
                   </div>
                   
                   {/* PDF Footer Only visible in PDF */}
-                  <div className="hidden print:block p-8 border-t border-border mt-8 text-center">
+                  <div className="hidden print:block p-8 border-t border-[#e5e5e5] mt-8 text-center">
                     <div className="flex justify-center items-center space-x-6 mb-3">
                       <div className="flex flex-col items-center">
-                        <span className="font-serif text-lg font-semibold tracking-widest text-primary leading-none">ELITTE</span>
-                        <span className="font-sans text-[8px] uppercase tracking-[0.2em] text-muted-foreground mt-1">Capital · Private</span>
+                        <span className="font-serif text-lg font-semibold tracking-widest text-[#1a1a1a] leading-none">ELITTE</span>
+                        <span className="font-sans text-[8px] uppercase tracking-[0.2em] text-[#737373] mt-1">Capital · Private</span>
                       </div>
-                      <span className="text-border h-6 w-px bg-border"></span>
-                      <span className="font-bold text-primary text-lg tracking-tight">necton</span>
+                      <span className="text-[#e5e5e5] h-6 w-px bg-[#e5e5e5]"></span>
+                      <span className="font-bold text-[#1a1a1a] text-lg tracking-tight">necton</span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground max-w-4xl leading-relaxed text-justify mx-auto">
+                    <p className="text-[10px] text-[#737373] max-w-4xl leading-relaxed text-justify mx-auto">
                       A Elitte Capital é uma empresa de assessoria de investimento devidamente registrada na Comissão de Valores Mobiliários (CVM), na forma da Resolução CVM 16/2021. Atuamos no mercado financeiro através da Necton Investimentos, instituição financeira autorizada a funcionar pelo Banco Central do Brasil. As informações contidas neste relatório são de caráter exclusivamente informativo e não constituem oferta, recomendação ou sugestão de investimento. Rentabilidade passada não é garantia de rentabilidade futura.
                     </p>
                   </div>

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, FileText, Loader2, X, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Loader2, X, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 // @ts-ignore
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -13,10 +13,17 @@ interface PDFImporterProps {
   onClose: () => void;
 }
 
+type FileStatus = 'pending' | 'processing' | 'success' | 'error';
+
+interface FileUploadState {
+  id: string;
+  file: File;
+  status: FileStatus;
+  error?: string;
+}
+
 export default function PDFImporter({ onClose }: PDFImporterProps) {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [files, setFiles] = useState<FileUploadState[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addTutorial } = useTutorials();
 
@@ -99,18 +106,8 @@ export default function PDFImporter({ onClose }: PDFImporterProps) {
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.type !== 'application/pdf') {
-      setError('Por favor, selecione um arquivo PDF.');
-      return;
-    }
-
-    setFileName(file.name);
-    setIsProcessing(true);
-    setError(null);
+  const processFile = async (id: string, file: File) => {
+    setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'processing' } : f));
 
     try {
       // 1. Extract Text
@@ -121,7 +118,7 @@ export default function PDFImporter({ onClose }: PDFImporterProps) {
 
       // 3. Create Tutorial Object
       const newTutorial = {
-        id: Date.now().toString(),
+        id: Date.now().toString() + Math.random().toString(36).substring(7),
         title: tutorialData.title,
         description: tutorialData.description,
         category: tutorialData.category,
@@ -136,81 +133,122 @@ export default function PDFImporter({ onClose }: PDFImporterProps) {
       // 4. Add to Context
       addTutorial(newTutorial);
       
-      // 5. Close and Notify (could add a toast here)
-      onClose();
+      setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'success' } : f));
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Ocorreu um erro ao processar o arquivo.');
-    } finally {
-      setIsProcessing(false);
+      setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'error', error: err.message || 'Erro ao processar arquivo.' } : f));
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    const newFiles: FileUploadState[] = selectedFiles.map(file => ({
+      id: Math.random().toString(36).substring(7),
+      file,
+      status: file.type === 'application/pdf' ? 'pending' : 'error',
+      error: file.type === 'application/pdf' ? undefined : 'Apenas arquivos PDF são permitidos.'
+    }));
+
+    setFiles(prev => [...prev, ...newFiles]);
+
+    // Process valid files
+    for (const fileState of newFiles) {
+      if (fileState.status === 'pending') {
+        processFile(fileState.id, fileState.file);
+      }
+    }
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const isProcessingAny = files.some(f => f.status === 'processing');
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative flex flex-col max-h-[90vh]">
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          disabled={isProcessingAny}
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 flex-shrink-0">
           <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
             <FileText className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900">Importar Documento</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Importar Documentos</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Envie um PDF do banco para gerar um tutorial automaticamente.
+            Envie PDFs do banco para gerar tutoriais automaticamente.
           </p>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm flex items-start">
-            <AlertCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-            {error}
-          </div>
-        )}
-
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto flex-1 pr-2 custom-scrollbar">
           <div 
-            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-              isProcessing ? 'border-primary/30 bg-primary/5' : 'border-gray-200 hover:border-primary hover:bg-gray-50'
-            }`}
-            onClick={() => !isProcessing && fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors border-gray-200 hover:border-primary hover:bg-gray-50 cursor-pointer flex-shrink-0`}
+            onClick={() => fileInputRef.current?.click()}
           >
             <input 
               type="file" 
               ref={fileInputRef}
               className="hidden" 
               accept="application/pdf"
+              multiple
               onChange={handleFileChange}
-              disabled={isProcessing}
             />
             
-            {isProcessing ? (
-              <div className="flex flex-col items-center justify-center py-2">
-                <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
-                <span className="text-sm font-medium text-primary">Processando documento...</span>
-                <span className="text-xs text-gray-400 mt-1">Isso pode levar alguns segundos</span>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-2 cursor-pointer">
-                <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                <span className="text-sm font-medium text-gray-700">
-                  {fileName ? fileName : 'Clique para selecionar o PDF'}
-                </span>
-                <span className="text-xs text-gray-400 mt-1">
-                  {fileName ? 'Clique para trocar' : 'Suporta arquivos PDF'}
-                </span>
-              </div>
-            )}
+            <div className="flex flex-col items-center justify-center py-2">
+              <Upload className="w-8 h-8 text-gray-400 mb-2" />
+              <span className="text-sm font-medium text-gray-700">
+                Clique para selecionar PDFs
+              </span>
+              <span className="text-xs text-gray-400 mt-1">
+                Suporta múltiplos arquivos PDF
+              </span>
+            </div>
           </div>
 
-          <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-700">
+          {files.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {files.map(fileState => (
+                <div key={fileState.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                  <div className="flex items-center space-x-3 overflow-hidden">
+                    <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    <div className="flex flex-col truncate">
+                      <span className="text-sm font-medium text-gray-700 truncate">{fileState.file.name}</span>
+                      {fileState.error && <span className="text-xs text-red-500 truncate">{fileState.error}</span>}
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 ml-4">
+                    {fileState.status === 'pending' && <span className="text-xs text-gray-500">Aguardando...</span>}
+                    {fileState.status === 'processing' && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
+                    {fileState.status === 'success' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                    {fileState.status === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-700 flex-shrink-0">
             <strong>Dica:</strong> O sistema irá identificar automaticamente se é PF ou PJ e filtrar informações irrelevantes para o primeiro acesso.
           </div>
+        </div>
+        
+        <div className="flex justify-end mt-6 pt-4 border-t border-gray-100 flex-shrink-0">
+          <button
+            onClick={onClose}
+            disabled={isProcessingAny}
+            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isProcessingAny ? 'Processando...' : 'Concluir'}
+          </button>
         </div>
       </div>
     </div>

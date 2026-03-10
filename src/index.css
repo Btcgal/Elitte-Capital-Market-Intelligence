@@ -26,6 +26,88 @@ h1, h2, h3, h4, h5, h6, .font-serif {
 }
 
 /* Print Mode overrides for html2pdf */
+.pdf-report {
+  background-color: white !important;
+  color: #1a1a1a !important;
+  font-size: 12pt;
+  line-height: 1.7;
+  box-sizing: border-box;
+}
+
+.pdf-report .prose {
+  max-width: none !important;
+  font-size: 12pt !important;
+  line-height: 1.7 !important;
+}
+
+.pdf-report .prose p {
+  text-align: justify !important;
+  margin-bottom: 1.25rem !important;
+  hyphens: auto;
+}
+
+.pdf-report .prose h1,
+.pdf-report .prose h2,
+.pdf-report .prose h3,
+.pdf-report .prose h4 {
+  font-family: "Cormorant Garamond", serif !important;
+  color: #1a1a1a !important;
+  page-break-after: avoid;
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.pdf-report .prose h2 {
+  font-size: 22pt !important;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 0.5rem;
+}
+
+.pdf-report .prose h3 {
+  font-size: 18pt !important;
+}
+
+.pdf-report .prose h4 {
+  font-size: 14pt !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.pdf-report .avoid-break {
+  page-break-inside: avoid !important;
+}
+
+.pdf-report .page-break-before {
+  page-break-before: always !important;
+}
+
+.pdf-report blockquote {
+  border-left: 4px solid #8c7b65 !important;
+  padding-left: 1.5rem !important;
+  font-style: italic !important;
+  color: #737373 !important;
+  margin: 2rem 0 !important;
+}
+
+.pdf-report table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 2rem 0 !important;
+}
+
+.pdf-report th {
+  background-color: #f9fafb !important;
+  border-bottom: 2px solid #e5e5e5 !important;
+  padding: 12px !important;
+  text-align: left !important;
+  font-weight: bold !important;
+}
+
+.pdf-report td {
+  border-bottom: 1px solid #e5e5e5 !important;
+  padding: 12px !important;
+}
+
 .print-mode {
   background-color: white !important;
   color: black !important;

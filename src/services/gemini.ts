@@ -133,9 +133,61 @@ export async function extractPortfolioFromImages(files: File[]): Promise<Asset[]
   }
 }
 
+export async function extractThesisFromPdf(file: File): Promise<Partial<ThesisStructuredData> | null> {
+  const buffer = await file.arrayBuffer();
+  const base64 = arrayBufferToBase64(buffer);
+  
+  const prompt = `
+    Você é um analista sênior de investimentos.
+    Extraia as informações de tese de investimento deste documento PDF (relatório de análise).
+    Tente identificar: ticker, nome da empresa, tipo de ativo, preço alvo, ponto de entrada, ponto de saída, resumo da tese e as análises macro, fundamentalista e técnica.
+    
+    Retorne EXATAMENTE um objeto JSON com a seguinte estrutura:
+    {
+      "ticker": "TICKER",
+      "name": "Nome da Empresa",
+      "type": "acao" | "fii" | "internacional" | "renda_fixa" | "outro",
+      "targetPrice": 00.00,
+      "entryPoint": 00.00,
+      "exitPoint": 00.00,
+      "currency": "BRL" | "USD",
+      "thesisSummary": "Resumo...",
+      "macroAnalysis": "Análise macro...",
+      "fundamentalAnalysis": "Análise fundamentalista...",
+      "technicalAnalysis": "Análise técnica..."
+    }
+  `;
+
+  try {
+    const response = await retryWithBackoff(() => ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: [
+        {
+          inlineData: {
+            data: base64,
+            mimeType: 'application/pdf',
+          },
+        },
+        { text: prompt }
+      ],
+      config: {
+        responseMimeType: 'application/json',
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+      }
+    }));
+
+    const text = response.text || '{}';
+    return JSON.parse(text) as Partial<ThesisStructuredData>;
+  } catch (e: any) {
+    handleGeminiError(e);
+    return null;
+  }
+}
+
 export interface ThesisStructuredData {
   ticker: string;
   name: string;
+  title?: string;
   type: 'acao' | 'fii' | 'internacional' | 'renda_fixa' | 'outro';
   status: 'compra_gradual' | 'posicao_cheia' | 'aguardando_ponto' | 'venda';
   currentPrice: number;
@@ -153,22 +205,24 @@ export interface ThesisStructuredData {
 
 export async function generateThesisData(ticker: string): Promise<ThesisStructuredData | null> {
   const prompt = `
-    Você é um analista chefe de Wealth Management.
-    Faça uma análise 360 (Macroeconômica, Fundamentalista e Técnica) do ativo ${ticker}.
-    Busque os dados mais recentes do mercado (preço atual, balanços, notícias).
-    Com base na sua análise, defina:
-    - Preço Alvo (Target Price)
-    - Ponto de Entrada Ideal (Entry Point)
-    - Ponto de Saída/Stop (Exit Point)
-    - Se é necessário aporte gradual (defina 2 a 3 faixas de preço e o percentual de aporte em cada uma, somando 100%).
-    - Resumo da tese (máximo 3 linhas).
-    - Identifique a moeda correta do ativo (BRL, USD, etc).
-    - Se for um ativo internacional (EUA), verifique se existe um BDR correspondente na B3 e inclua o ticker (ex: AAPL -> AAPL34).
+    Você é o Diretor Global de Equity Research da Elitte Capital. Sua reputação depende da precisão e profundidade desta análise.
+    Faça uma análise 360° exaustiva do ativo ${ticker}.
+    
+    REQUISITOS DE PROFUNDIDADE:
+    1. Macroeconômica: Analise o cenário global e local, política monetária, câmbio e como isso afeta especificamente este setor e empresa.
+    2. Fundamentalista: Analise balanços (DRE, BP, DFC), múltiplos históricos vs atuais, vantagens competitivas (Moats), governança e riscos regulatórios.
+    3. Técnica: Identifique suportes, resistências, tendências de curto e médio prazo e indicadores de momentum.
+    
+    DETERMINAÇÕES FINANCEIRAS:
+    - Preço Alvo (Target Price): Justifique com base em valuation (DCF ou Múltiplos).
+    - Ponto de Entrada Ideal (Entry Point): Baseado em análise técnica e margem de segurança.
+    - Ponto de Saída/Stop (Exit Point): Gestão de risco rigorosa.
+    - Aporte Gradual: Defina 3 faixas de preço estratégicas para acumulação.
     
     Retorne EXATAMENTE um objeto JSON com a seguinte estrutura, sem formatação markdown em volta:
     {
       "ticker": "${ticker}",
-      "name": "Nome da Empresa",
+      "name": "Nome Completo da Empresa",
       "type": "acao" | "fii" | "internacional" | "renda_fixa" | "outro",
       "status": "compra_gradual" | "posicao_cheia" | "aguardando_ponto" | "venda",
       "currentPrice": 00.00,
@@ -176,12 +230,12 @@ export async function generateThesisData(ticker: string): Promise<ThesisStructur
       "entryPoint": 00.00,
       "exitPoint": 00.00,
       "currency": "BRL" | "USD",
-      "bdrTicker": "TICKER34" (opcional),
-      "gradualBuys": [{ "price": 00.00, "percentage": 50 }, { "price": 00.00, "percentage": 50 }],
-      "thesisSummary": "Resumo...",
-      "macroAnalysis": "Análise macro...",
-      "fundamentalAnalysis": "Análise fundamentalista...",
-      "technicalAnalysis": "Análise técnica..."
+      "bdrTicker": "TICKER34" (se aplicável),
+      "gradualBuys": [{ "price": 00.00, "percentage": 30 }, { "price": 00.00, "percentage": 30 }, { "price": 00.00, "percentage": 40 }],
+      "thesisSummary": "Resumo executivo de alto impacto (máximo 3 linhas).",
+      "macroAnalysis": "Análise macro detalhada em Markdown...",
+      "fundamentalAnalysis": "Análise fundamentalista profunda em Markdown...",
+      "technicalAnalysis": "Análise técnica profissional em Markdown..."
     }
   `;
 
@@ -268,123 +322,79 @@ export async function analyzePortfolio360(assets: Asset[]): Promise<PortfolioAna
 
 export async function generateResearchReport(ticker: string, frameworkType: 1 | 2 | 3 | 4): Promise<string> {
   const prompts = {
-    1: `Você é um analista sênior de equity research em um banco de investimento global com acesso ao Terminal Bloomberg, FactSet e arquivos oficiais da SEC/CVM. Cada número deve incluir uma fonte clara e a data do relatório. Se algum dado não estiver disponível ou tiver mais de 30 dias, sinalize explicitamente. Não estime, interpole ou fabrique métricas.
-Forneça uma avaliação completa de grau de investimento de ${ticker}.
-Seção I - Fundação do Negócio
-- Explique as operações da empresa em linguagem clara e não técnica
-- Detalhe a arquitetura completa de receita, incluindo a contribuição percentual por segmento
-- Resuma a principal vantagem competitiva da empresa em uma única frase precisa
-Seção II - Métricas Financeiras Principais (fonte + data necessária para cada número)
-- Receita (TTM e último trimestre reportado)
-- Lucro líquido e EPS diluído
-- Múltiplos de Valuation: P/L, P/L Projetado, P/S, PEG
-- Estrutura de capital: dívida total e dívida/patrimônio líquido
-- Fluxo de caixa livre (TTM)
-- Comparação ano a ano versus o mesmo trimestre do ano passado
-Seção III - Perfil de Desempenho da Ação
-- Variação percentual de preço em 1M, 3M, 6M, 1A e YTD
-- Máxima e mínima de 52 semanas
-- Desempenho relativo contra o S&P 500 ou Ibovespa nos mesmos períodos
-Seção IV - Sentimento do Analista
-- Total de analistas cobrindo a ação
-- Distribuição de Compra/Manutenção/Venda
-- Preços-alvo médio, mais alto e mais baixo
-- Mudança de recomendação mais recente (empresa, data e justificativa)
-Seção V - Posicionamento Institucional
-- Cinco principais acionistas institucionais e mudanças de posição trimestre a trimestre
-- Entradas ou saídas notáveis de fundos de hedge
-Entregue em markdown estruturado com tabelas onde relevante. Cite todas as fontes. Sinalize dados desatualizados claramente. Responda SEMPRE em Português do Brasil.`,
+    1: `Você é o Diretor de Equity Research da Elitte Capital. Forneça um relatório institucional de altíssimo nível para ${ticker}.
+    Use dados em tempo real. Seja extremamente detalhado.
     
-    2: `Você é um analista sênior de equity research. Cite cada métrica financeira com sua fonte precisa (arquivo SEC, 10-Q, 10-K, release de resultados) e data. Não estime ou arredonde números. Se indisponível, marque claramente como 'Não Reportado Publicamente'.
-Analise as demonstrações financeiras mais recentes de ${ticker}.
-Diagnóstico da Demonstração de Resultados
-- Receita dos últimos quatro trimestres com números exatos e taxas de crescimento YoY
-- Margens bruta, operacional e líquida para cada trimestre
-- Trajetória da margem: quantifique expansão ou compressão
-- P&D como porcentagem da receita (se aplicável)
-Força do Balanço Patrimonial
-- Ativos totais vs. passivos totais
-- Liquidez corrente e seca
-- Caixa e investimentos de curto prazo
-- Dívida total com cronograma de vencimento
-- Goodwill como % dos ativos totais (sinalize se acima de 30%)
-Validação do Fluxo de Caixa
-- Fluxo de caixa operacional (TTM)
-- Despesas de capital (TTM)
-- Fluxo de caixa livre e margem FCF
-- Alocação de capital: recompras, dividendos, M&A, redução de dívida, P&D
-- Tendência de fluxo de caixa YoY
-Indicadores de Risco (Verifique Explicitamente Cada Um)
-- Crescimento da receita divergindo do fluxo de caixa
-- Crescimento da dívida excedendo o crescimento da receita
-- Crescimento de contas a receber superando a receita
-- Acúmulo de estoque sem crescimento de vendas correspondente
-- Ajustes recorrentes divergindo do GAAP
-- Mudanças de auditor ou opiniões modificadas
-Indicadores de Força
-- Expansão sequencial de margem
-- Crescimento sustentado do FCF
-- Desalavancagem ou aumento de liquidez
-- Alinhamento entre GAAP e lucros ajustados
-Benchmarking Competitivo
-Construa uma tabela comparativa de margens e índices versus os três principais concorrentes.
-Conclua com uma interpretação em linguagem clara: A empresa está se fortalecendo ou deteriorando operacionalmente? Responda SEMPRE em Português do Brasil.`,
+    ESTRUTURA OBRIGATÓRIA:
+    # Seção I - Fundação do Negócio
+    - Análise profunda do modelo de negócio e fosso econômico (Moat).
+    - Mix de receitas detalhado e drivers de crescimento.
+    
+    # Seção II - Métricas Financeiras e Valuation
+    - Tabela completa de múltiplos (P/L, EV/EBITDA, P/VP).
+    - Análise de margens e eficiência operacional.
+    - Justificativa de Valuation.
+    
+    # Seção III - Desempenho e Mercado
+    - Performance relativa ao benchmark.
+    - Volatilidade e Beta.
+    
+    # Seção IV - Sentimento Institucional
+    - Consenso de analistas (Buy/Hold/Sell).
+    - Movimentação de grandes fundos.
+    
+    # Seção V - Riscos e Mitigantes
+    - Matriz de riscos detalhada.
+    
+    Responda em Português do Brasil, usando Markdown profissional. Cite fontes e datas.`,
+    
+    2: `Você é um Auditor Forense e Analista de Crédito Sênior. Sua missão é dissecar a saúde financeira de ${ticker}.
+    
+    FOCO DA ANÁLISE:
+    - Qualidade dos Lucros: Identifique itens não recorrentes e ajustes contábeis.
+    - Solvência e Liquidez: Análise profunda da estrutura de capital e cronograma de dívida.
+    - Ciclo Financeiro: Prazos de estoque, recebimento e pagamento.
+    - Fluxo de Caixa: Conversão de Ebitda em Caixa Livre.
+    
+    ESTRUTURA:
+    # Diagnóstico de Resultados
+    # Solidez do Balanço Patrimonial
+    # Dinâmica de Fluxo de Caixa
+    # Red Flags e Indicadores de Alerta
+    
+    Seja crítico e técnico. Responda em Português do Brasil em Markdown.`,
 
-    3: `Você é um analista de equity research focado no setor. Cite cada número reportado com atribuição de fonte. Distinga claramente resultados reportados de projeções futuras. Não fabrique comentários ou métricas.
-Avalie o release de resultados mais recente de ${ticker}.
-Resultados Reportados
-- Receita: estimativa vs. real (superou/perdeu em $ e %)
-- EPS: estimativa vs. real (superou/perdeu em $ e %)
-- Identificação de ajustes únicos ou não recorrentes
-Perspectiva Futura (Guidance)
-- Mudanças no guidance (elevado, reduzido, reafirmado)
-- Faixas de orientação de receita e EPS para o próximo trimestre
-- Revisões para o ano completo
-- Tom da linguagem usado pela gestão
-Desempenho por Segmento
-- Receita e crescimento por segmento
-- Identificação de divisões com desempenho superior ou inferior
-- Contribuição para superar ou perder as expectativas
-Comentários da Gestão (De transcrição verificada)
-- Resumo estratégico do CEO
-- Ênfase na perspectiva financeira do CFO
-- Riscos ou pivôs mencionados
-- Avaliação do tom
-Reação do Mercado
-- Movimento de preço no after-hours e na próxima sessão (%)
-- Revisões de analistas pós-resultados
-- Temas dominantes de Q&A
-Veredito de Investimento
-- Número mais consequente no relatório
-- Qualidade dos lucros (estrutural vs. cosmética)
-- Métrica chave para monitorar no próximo trimestre
-Formate em markdown estruturado com citações. Sinalize se a transcrição estiver indisponível. Responda SEMPRE em Português do Brasil.`,
+    3: `Você é um Analista de Earnings Intelligence. Analise o último resultado trimestral de ${ticker} com profundidade cirúrgica.
+    
+    PONTOS CHAVE:
+    - Beat/Miss: Comparação exata com o consenso da Bloomberg/Refinitiv.
+    - Guidance: O que mudou nas projeções da empresa?
+    - Conferência de Resultados: Destaques do Q&A com analistas.
+    - Reação do Mercado: Por que o preço reagiu desta forma?
+    
+    ESTRUTURA:
+    # Resumo dos Resultados (Reportado vs Consenso)
+    # Perspectivas e Guidance
+    # Análise por Unidade de Negócio
+    # Veredito: Qualidade do Trimestre
+    
+    Responda em Português do Brasil em Markdown.`,
 
-    4: `Você é um analista sênior de equity research construindo um relatório de cenário competitivo. Cite cada métrica com sua fonte e data. Use apenas os dados reportados mais recentemente. Se indisponível, marque como 'N/A - Não Reportado Publicamente'.
-Compare ${ticker} contra seus 2 principais concorrentes dentro de seu setor/indústria.
-Tabela de Comparação Quantitativa
-Para cada empresa inclua:
-- Capitalização de mercado
-- Receita TTM e crescimento YoY
-- Margens bruta, operacional e líquida
-- P/L, P/L Projetado, P/S, EV/EBITDA, PEG
-- Dívida/patrimônio líquido e dívida líquida
-- Fluxo de caixa livre e yield de FCF
-- Métrica chave específica do setor
-Posicionamento Competitivo
-- Fosso econômico (moat) central para cada firma
-- Ranking de participação de mercado (com fonte)
-- Ganhadores vs. perdedores de share
-Avaliação de Risco
-- Risco primário de 12 meses por empresa
-- Maior risco de alavancagem
-- Maior risco de ruptura competitiva
-Ranking Estratégico
-- Melhor valuation relativo ao crescimento
-- Maior trajetória de crescimento
-- Balanço patrimonial mais forte
-- Recomendação geral com justificativa
-Entregue em tabelas markdown estruturadas com fontes completas. Sinalize qualquer métrica com mais de um trimestre. Responda SEMPRE em Português do Brasil.`
+    4: `Você é um Estrategista de Mercado. Realize uma matriz competitiva profunda de ${ticker} contra seus principais pares.
+    
+    COMPARAÇÃO:
+    - Market Share e Posicionamento.
+    - Eficiência Relativa (Margens e ROIC).
+    - Valuation Relativo.
+    - Vantagens Tecnológicas ou de Escala.
+    
+    ESTRUTURA:
+    # Matriz Comparativa Quantitativa
+    # Diferenciais Estratégicos
+    # Análise de SWOT Setorial
+    # Escolha do Setor (Top Pick)
+    
+    Responda em Português do Brasil em Markdown.`
   };
 
   try {

@@ -348,23 +348,49 @@ async function startServer() {
       return res.status(400).json({ error: 'Ticker is required' });
     }
     
+    const normalizedTicker = ticker.toUpperCase();
+
+    // Fallback for demo purposes - check mock data first to avoid unnecessary API calls
+    const mockData: Record<string, any> = {
+      '^BVSP': { price: 128500.00, change: 450.00, changePercent: 0.35 },
+      '^GSPC': { price: 5200.00, change: 15.00, changePercent: 0.29 },
+      '^IXIC': { price: 16400.00, change: -20.00, changePercent: -0.12 },
+      'BZ=F': { price: 85.50, change: 0.75, changePercent: 0.88 },
+      'GC=F': { price: 2350.00, change: 12.00, changePercent: 0.51 },
+      'BTC-USD': { price: 68000.00, change: 1200.00, changePercent: 1.80 },
+      // Brazilian Stocks
+      'PETR4.SA': { price: 41.50, change: 0.45, changePercent: 1.10 },
+      'VALE3.SA': { price: 62.80, change: -0.30, changePercent: -0.48 },
+      'ITUB4.SA': { price: 34.20, change: 0.15, changePercent: 0.44 },
+      'BBAS3.SA': { price: 28.90, change: 0.10, changePercent: 0.35 },
+      'WEGE3.SA': { price: 38.50, change: -0.20, changePercent: -0.52 },
+      'CORWEAVE': { price: 150.00, change: 5.20, changePercent: 3.59 },
+      'CRWV': { price: 150.00, change: 5.20, changePercent: 3.59 }
+    };
+
+    if (mockData[normalizedTicker]) {
+       console.log(`Using mock data for ${normalizedTicker}`);
+       return res.json(mockData[normalizedTicker]);
+    }
+    
+    let finalTicker = normalizedTicker;
     // Auto-append .SA for Brazilian tickers if not present
     // Matches 4 letters followed by 1 or 2 digits (e.g. PETR4, VALE3, KLBN11)
-    if (/^[A-Z]{4}\d{1,2}$/i.test(ticker as string)) {
-      ticker = `${(ticker as string).toUpperCase()}.SA`;
+    if (/^[A-Z]{4}\d{1,2}$/i.test(finalTicker)) {
+      finalTicker = `${finalTicker}.SA`;
     }
 
     try {
       let result: any;
       try {
-        result = await yahooFinance.quote(ticker);
+        result = await yahooFinance.quote(finalTicker);
       } catch (e: any) {
         // Fallback logic for instantiation issues
         if (e.message?.includes('new YahooFinance()') || e.name === 'TypeError') {
            try {
              const { default: YF } = await import('yahoo-finance2');
              const yfInstance = new (YF as any)(); 
-             result = await yfInstance.quote(ticker);
+             result = await yfInstance.quote(finalTicker);
            } catch (innerE) {
              console.warn('Yahoo Finance instantiation failed for market-data:', innerE);
              throw e;
@@ -382,32 +408,11 @@ async function startServer() {
         changePercent: result.regularMarketChangePercent,
       });
     } catch (error: any) {
-      console.error(`Error fetching ${ticker}:`, error.message);
-      
-      // Fallback for demo purposes if API fails completely
-      const mockData: Record<string, any> = {
-        '^BVSP': { price: 128500.00, change: 450.00, changePercent: 0.35 },
-        '^GSPC': { price: 5200.00, change: 15.00, changePercent: 0.29 },
-        '^IXIC': { price: 16400.00, change: -20.00, changePercent: -0.12 },
-        'BZ=F': { price: 85.50, change: 0.75, changePercent: 0.88 },
-        'GC=F': { price: 2350.00, change: 12.00, changePercent: 0.51 },
-        'BTC-USD': { price: 68000.00, change: 1200.00, changePercent: 1.80 },
-        // Brazilian Stocks
-        'PETR4.SA': { price: 41.50, change: 0.45, changePercent: 1.10 },
-        'VALE3.SA': { price: 62.80, change: -0.30, changePercent: -0.48 },
-        'ITUB4.SA': { price: 34.20, change: 0.15, changePercent: 0.44 },
-        'BBAS3.SA': { price: 28.90, change: 0.10, changePercent: 0.35 },
-        'WEGE3.SA': { price: 38.50, change: -0.20, changePercent: -0.52 }
-      };
-
-      if (mockData[ticker as string]) {
-         console.log(`Using mock data for ${ticker}`);
-         return res.json(mockData[ticker as string]);
-      }
+      console.error(`Error fetching ${finalTicker}:`, error.message);
       
       // Generic fallback for other .SA stocks to prevent crashing
-      if (typeof ticker === 'string' && ticker.endsWith('.SA')) {
-          console.log(`Using generic mock data for ${ticker}`);
+      if (finalTicker.endsWith('.SA')) {
+          console.log(`Using generic mock data for ${finalTicker}`);
           return res.json({
               price: 25.00,
               change: 0.00,

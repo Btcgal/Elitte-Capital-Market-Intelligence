@@ -42,6 +42,13 @@ export default function Research() {
   const [newClient, setNewClient] = useState({ name: '', email: '', phone: '', riskProfile: 'Moderado' });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [generationTime, setGenerationTime] = useState<string>('');
+  const [visibility, setVisibility] = useState({
+    summary: true,
+    macro: true,
+    fundamental: true,
+    technical: true,
+    gradual: true
+  });
 
   useEffect(() => {
     localStorage.setItem('activeFramework', activeFramework.toString());
@@ -64,6 +71,7 @@ export default function Research() {
     const categoryMap: Record<string, InvestmentThesis['category']> = {
       'acao': 'Equity',
       'fii': 'Alternative',
+      'etf': 'Equity',
       'internacional': 'Equity',
       'renda_fixa': 'Fixed Income',
       'cripto': 'Crypto',
@@ -134,38 +142,56 @@ export default function Research() {
     if (!report && !thesisData) return;
     setIsGeneratingPdf(true);
 
-    const element = document.getElementById('research-report-content');
-    if (!element) return;
+    const originalElement = document.getElementById('research-report-content');
+    if (!originalElement) return;
+
+    // Clone the element to avoid scroll/overflow issues with html2canvas
+    const element = originalElement.cloneNode(true) as HTMLElement;
+    element.style.position = 'absolute';
+    element.style.top = '0';
+    element.style.left = '0';
+    element.style.width = '210mm';
+    element.style.zIndex = '-9999';
+    element.style.backgroundColor = 'white';
+    element.style.height = 'auto';
+    element.style.overflow = 'visible';
+    document.body.appendChild(element);
+
+    // Wait for browser to paint the cloned element
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     const opt = {
-      margin: [10, 10, 10, 10] as [number, number, number, number],
+      margin: [15, 15, 15, 15],
       filename: `Relatorio_Research_${ticker}_${new Date().toISOString().split('T')[0]}.pdf`,
-      image: { type: 'jpeg' as const, quality: 1.0 },
+      image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
-        scale: 3, 
+        scale: 2, 
         useCORS: true,
-        letterRendering: true,
         scrollY: 0,
-        windowWidth: 1200
+        windowWidth: 1024,
+        logging: false
       },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] }
     };
 
     try {
       // @ts-ignore
       const module = await import('html2pdf.js');
-      const html2pdf = module.default || module;
+      const html2pdf = (module.default || module) as any;
       
       if (typeof html2pdf !== 'function') {
         throw new Error('html2pdf library not loaded correctly');
       }
 
-      await html2pdf().set(opt).from(element).save();
+      await html2pdf().from(element).set(opt).save();
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Erro ao gerar PDF. Verifique o console para mais detalhes.');
     } finally {
+      if (document.body.contains(element)) {
+        document.body.removeChild(element);
+      }
       setIsGeneratingPdf(false);
     }
   };
@@ -294,6 +320,59 @@ export default function Research() {
 
           <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col flex-shrink-0 max-h-[400px]">
             <div className="p-5 border-b border-border bg-secondary/30">
+              <h3 className="text-sm font-semibold text-primary tracking-wide">Configurações de Visibilidade</h3>
+            </div>
+            <div className="p-5 space-y-3">
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={visibility.summary} 
+                  onChange={() => setVisibility(v => ({...v, summary: !v.summary}))}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-accent"
+                />
+                <span className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Resumo da Tese</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={visibility.macro} 
+                  onChange={() => setVisibility(v => ({...v, macro: !v.macro}))}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-accent"
+                />
+                <span className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Análise Macro</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={visibility.fundamental} 
+                  onChange={() => setVisibility(v => ({...v, fundamental: !v.fundamental}))}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-accent"
+                />
+                <span className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Análise Fundamentalista</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={visibility.technical} 
+                  onChange={() => setVisibility(v => ({...v, technical: !v.technical}))}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-accent"
+                />
+                <span className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Análise Técnica</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={visibility.gradual} 
+                  onChange={() => setVisibility(v => ({...v, gradual: !v.gradual}))}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-accent"
+                />
+                <span className="text-sm text-muted-foreground group-hover:text-primary transition-colors">Aportes Graduais</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col flex-shrink-0 max-h-[400px]">
+            <div className="p-5 border-b border-border bg-secondary/30">
               <h3 className="text-sm font-semibold text-primary tracking-wide">Framework de Análise</h3>
             </div>
             <div className="p-3 space-y-2 overflow-y-auto flex-1">
@@ -411,7 +490,7 @@ export default function Research() {
                     <select
                       value={selectedClientId}
                       onChange={(e) => setSelectedClientId(e.target.value)}
-                      className="h-9 rounded-lg border border-border bg-white text-sm px-3 focus:outline-none focus:ring-2 focus:ring-accent"
+                      className="h-9 rounded-lg border border-border bg-white text-sm px-3 focus:outline-none focus:ring-2 focus:ring-accent w-48"
                     >
                       <option value="">Selecione um cliente...</option>
                       {clients.map(client => (
@@ -425,7 +504,7 @@ export default function Research() {
                       onClick={handleSendEmail}
                       disabled={!selectedClientId || isSendingEmail || emailStatus === 'success'}
                       className={cn(
-                        "h-9 px-4 rounded-lg text-sm font-medium flex items-center transition-all",
+                        "h-9 px-4 rounded-lg text-sm font-medium flex items-center transition-all shadow-sm",
                         emailStatus === 'success' 
                           ? "bg-green-100 text-green-700 border border-green-200"
                           : emailStatus === 'error'
@@ -446,7 +525,7 @@ export default function Research() {
                     </button>
                   </div>
 
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-secondary text-primary border border-border">
+                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-primary text-white border border-primary shadow-sm">
                     {ticker}
                   </span>
                 </>
@@ -454,55 +533,59 @@ export default function Research() {
             </div>
           </div>
           
-          <div className="p-8 md:p-12 overflow-y-auto flex-1 bg-white print-mode" id="research-report-content">
-            {/* Header */}
+          <div className="overflow-y-auto flex-1 bg-white">
+            <div className="p-8 md:p-12 pdf-report" id="research-report-content">
+              {/* Header */}
             {(report || thesisData) && (
-              <div className="mb-12 border-b-2 border-[#1a1a1a] pb-8 pdf-header">
+              <div className="mb-12 border-b border-[#e5e5e5] pb-10 pdf-header relative">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 bg-[#1a1a1a] rounded-lg flex items-center justify-center text-white font-serif text-xl font-bold">
-                        {ticker.substring(0, 2)}
+                    <div className="flex items-center gap-6 mb-8">
+                      <div className="w-20 h-20 bg-[#1a1a1a] rounded-2xl flex items-center justify-center text-white font-serif text-3xl font-bold shadow-xl">
+                        {ticker.substring(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <h1 className="text-3xl font-serif font-bold text-[#1a1a1a] tracking-tight leading-none">Relatório de Análise</h1>
-                        <p className="text-xs text-[#737373] mt-1 font-medium uppercase tracking-[0.2em]">Institutional Equity Intelligence</p>
+                        <h1 className="text-5xl font-serif font-bold text-[#1a1a1a] tracking-tight leading-none mb-2">Relatório de Análise</h1>
+                        <p className="text-[10px] text-[#8c7b65] font-bold uppercase tracking-[0.3em]">Institutional Equity Intelligence</p>
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-[10px] text-[#737373] uppercase tracking-wider font-bold">
-                      <div className="flex items-center gap-1.5 bg-[#f5f2ed] px-2 py-1 rounded text-[#1a1a1a] border border-[#e5e5e5]">
-                        <Target className="w-3 h-3" />
+                    <div className="flex flex-wrap items-center gap-y-4 gap-x-8 text-[11px] text-[#1a1a1a] uppercase tracking-widest font-bold mb-10">
+                      <div className="flex items-center gap-2.5 bg-[#f9fafb] px-4 py-2 rounded-xl border border-[#e5e5e5]">
+                        <div className="w-2 h-2 rounded-full bg-[#8c7b65]"></div>
                         <span>{ticker}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Globe2 className="w-3 h-3" />
+                      <div className="flex items-center gap-2.5 bg-[#f9fafb] px-4 py-2 rounded-xl border border-[#e5e5e5]">
+                        <div className="w-2 h-2 rounded-full bg-[#8c7b65]"></div>
                         <span>{frameworks.find(f => f.id === activeFramework)?.title}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <FileText className="w-3 h-3" />
+                      <div className="flex items-center gap-2.5 bg-[#f9fafb] px-4 py-2 rounded-xl border border-[#e5e5e5]">
+                        <div className="w-2 h-2 rounded-full bg-[#8c7b65]"></div>
                         <span>{new Date().toLocaleDateString('pt-BR')}</span>
                       </div>
                     </div>
 
-                    <div className="mt-6 flex items-center gap-6 text-[9px] text-[#a3a3a3] uppercase tracking-[0.15em] font-semibold border-t border-[#f5f5f5] pt-4">
-                      <div className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                    <div className="flex items-center gap-10 text-[10px] text-[#737373] uppercase tracking-[0.2em] font-bold border-t border-[#f5f5f5] pt-6">
+                      <div className="flex items-center gap-3">
+                        <span className="w-2 h-2 rounded-full bg-[#8c7b65]"></span>
                         <span>Gerado por: Demo User</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
-                        <span>Hora da Emissão: {generationTime || new Date().toLocaleTimeString('pt-BR')}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="w-2 h-2 rounded-full bg-[#8c7b65]"></span>
+                        <span>Hora: {generationTime || new Date().toLocaleTimeString('pt-BR')}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                      <div className="flex items-center gap-3">
+                        <span className="w-2 h-2 rounded-full bg-[#8c7b65]"></span>
                         <span>ID: {Math.random().toString(36).substring(2, 10).toUpperCase()}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right pl-8 flex flex-col items-end">
-                    <Logo size="lg" />
-                    <div className="mt-2 text-[10px] font-serif italic text-[#8c7b65]">Capital · Private</div>
+                  <div className="text-right pl-10 flex flex-col items-end">
+                    <div className="flex flex-col items-end mb-4">
+                      <span className="font-serif text-3xl font-bold tracking-widest text-[#1a1a1a] leading-none">ELITTE</span>
+                      <span className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#737373] mt-1">Capital · Private</span>
+                    </div>
+                    <div className="text-[10px] font-serif italic text-[#8c7b65] opacity-60 tracking-widest">Capital · Private</div>
                   </div>
                 </div>
               </div>
@@ -520,53 +603,62 @@ export default function Research() {
               </div>
             ) : thesisData ? (
               <div className="space-y-12 max-w-4xl mx-auto">
-                <div className="avoid-break">
-                  <h2 className="text-2xl font-serif font-bold text-[#1a1a1a] mb-6 border-b border-[#e5e5e5] pb-2">Resumo da Tese</h2>
-                  <ThesisCard thesis={{
-                    ...thesisData, 
-                    id: 'temp', 
-                    thesis: thesisData.thesisSummary,
-                    macroAnalysis: undefined,
-                    fundamentalAnalysis: undefined,
-                    technicalAnalysis: undefined
-                  }} />
-                </div>
+                {visibility.summary && (
+                  <div className="avoid-break">
+                    <h2 className="text-2xl font-serif font-bold text-[#1a1a1a] mb-6 border-b border-[#e5e5e5] pb-2">Resumo da Tese</h2>
+                    <ThesisCard thesis={{
+                      ...thesisData, 
+                      id: 'temp', 
+                      description: thesisData.thesisSummary,
+                      macroAnalysis: undefined,
+                      fundamentalAnalysis: undefined,
+                      technicalAnalysis: undefined,
+                      gradualBuys: visibility.gradual ? thesisData.gradualBuys : []
+                    }} />
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-1 gap-8">
-                  <div className="p-8 bg-[#f9fafb] rounded-2xl border border-[#e5e5e5] avoid-break">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Globe2 className="w-5 h-5 text-[#8c7b65]" />
-                      <h4 className="font-serif text-xl font-bold text-[#1a1a1a]">Análise Macro</h4>
+                  {visibility.macro && (
+                    <div className="p-8 bg-[#f9fafb] rounded-2xl border border-[#e5e5e5] avoid-break">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Globe2 className="w-5 h-5 text-[#8c7b65]" />
+                        <h4 className="font-serif text-xl font-bold text-[#1a1a1a]">Análise Macro</h4>
+                      </div>
+                      <div className="prose prose-sm max-w-none text-[#4b5563] leading-relaxed text-justify">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{thesisData.macroAnalysis}</ReactMarkdown>
+                      </div>
                     </div>
-                    <div className="prose prose-sm max-w-none text-[#4b5563] leading-relaxed text-justify">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{thesisData.macroAnalysis}</ReactMarkdown>
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="p-8 bg-[#f9fafb] rounded-2xl border border-[#e5e5e5] avoid-break">
-                    <div className="flex items-center gap-3 mb-4">
-                      <FileText className="w-5 h-5 text-[#8c7b65]" />
-                      <h4 className="font-serif text-xl font-bold text-[#1a1a1a]">Análise Fundamentalista</h4>
+                  {visibility.fundamental && (
+                    <div className="p-8 bg-[#f9fafb] rounded-2xl border border-[#e5e5e5] avoid-break">
+                      <div className="flex items-center gap-3 mb-4">
+                        <FileText className="w-5 h-5 text-[#8c7b65]" />
+                        <h4 className="font-serif text-xl font-bold text-[#1a1a1a]">Análise Fundamentalista</h4>
+                      </div>
+                      <div className="prose prose-sm max-w-none text-[#4b5563] leading-relaxed text-justify">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{thesisData.fundamentalAnalysis}</ReactMarkdown>
+                      </div>
                     </div>
-                    <div className="prose prose-sm max-w-none text-[#4b5563] leading-relaxed text-justify">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{thesisData.fundamentalAnalysis}</ReactMarkdown>
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="p-8 bg-[#f9fafb] rounded-2xl border border-[#e5e5e5] avoid-break">
-                    <div className="flex items-center gap-3 mb-4">
-                      <BarChart3 className="w-5 h-5 text-[#8c7b65]" />
-                      <h4 className="font-serif text-xl font-bold text-[#1a1a1a]">Análise Técnica</h4>
+                  {visibility.technical && (
+                    <div className="p-8 bg-[#f9fafb] rounded-2xl border border-[#e5e5e5] avoid-break">
+                      <div className="flex items-center gap-3 mb-4">
+                        <BarChart3 className="w-5 h-5 text-[#8c7b65]" />
+                        <h4 className="font-serif text-xl font-bold text-[#1a1a1a]">Análise Técnica</h4>
+                      </div>
+                      <div className="prose prose-sm max-w-none text-[#4b5563] leading-relaxed text-justify">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{thesisData.technicalAnalysis}</ReactMarkdown>
+                      </div>
                     </div>
-                    <div className="prose prose-sm max-w-none text-[#4b5563] leading-relaxed text-justify">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{thesisData.technicalAnalysis}</ReactMarkdown>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             ) : report ? (
               <div className="max-w-4xl mx-auto">
-                <div className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-[#1a1a1a] prose-a:text-[#8c7b65] prose-p:text-[#4b5563] prose-li:text-[#4b5563] prose-strong:text-[#1a1a1a] prose-table:border-collapse prose-th:bg-[#f3f4f6] prose-th:text-[#1a1a1a] prose-th:p-4 prose-td:p-4 prose-td:border-b prose-td:border-[#e5e5e5] prose-img:rounded-xl prose-hr:border-[#e5e5e5]">
+                <div className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-[#1a1a1a] prose-a:text-[#8c7b65] prose-p:text-[#4b5563] prose-li:text-[#4b5563] prose-strong:text-[#1a1a1a] prose-table:border-collapse prose-th:bg-[#f3f4f6] prose-th:text-[#1a1a1a] prose-th:p-4 prose-td:p-4 prose-td:border-b prose-td:border-[#e5e5e5] prose-img:rounded-xl prose-hr:border-[#e5e5e5] prose-blockquote:border-[#e5e5e5] prose-blockquote:text-[#737373] prose-code:text-[#1a1a1a] prose-pre:bg-[#f3f4f6] prose-pre:text-[#1a1a1a]">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{report}</ReactMarkdown>
                 </div>
               </div>
@@ -579,18 +671,26 @@ export default function Research() {
 
             {/* Footer */}
             {(report || thesisData) && (
-              <div className="mt-16 pt-8 border-t border-[#e5e5e5] text-xs text-[#9ca3af] text-justify page-break">
-                <div className="flex items-center justify-between mb-4">
-                  <Logo size="sm" variant="default" className="opacity-50" />
-                  <span className="text-[#d1d5db]">{new Date().getFullYear()}</span>
+              <div className="mt-20 pt-10 border-t border-[#e5e5e5] text-xs text-[#737373] text-justify page-break-before">
+                <div className="flex items-center justify-between mb-8">
+                  <Logo size="md" variant="default" className="opacity-40" />
+                  <div className="text-[10px] font-bold text-[#d1d5db] tracking-[0.2em]">{new Date().getFullYear()}</div>
                 </div>
-                <p className="font-bold text-[#1a1a1a] mb-2">Disclaimer</p>
-                <p className="leading-relaxed">Este material tem caráter meramente informativo e não deve ser considerado como recomendação de investimento. A Elitte Capital não se responsabiliza por decisões tomadas com base nestas informações. Rentabilidade passada não garante rentabilidade futura. As informações contidas neste relatório foram obtidas de fontes consideradas confiáveis, mas sua precisão e completude não são garantidas. Este relatório é destinado exclusivamente para clientes da Elitte Capital e não pode ser reproduzido ou distribuído sem autorização prévia.</p>
+                <div className="bg-[#f9fafb] p-6 rounded-xl border border-[#f3f4f6]">
+                  <p className="font-bold text-[#1a1a1a] mb-3 uppercase tracking-widest text-[10px]">Disclaimer Legal</p>
+                  <p className="leading-relaxed text-[10px] opacity-80">
+                    Este material tem caráter meramente informativo e não deve ser considerado como recomendação de investimento, oferta de compra ou venda de qualquer ativo financeiro. 
+                    A <strong>Elitte Capital</strong> não se responsabiliza por decisões tomadas com base nestas informações. Rentabilidade passada não garante rentabilidade futura. 
+                    As informações contidas neste relatório foram obtidas de fontes consideradas confiáveis (Bloomberg, Reuters, SEC Filings, B3), mas sua precisão e completude não são garantidas. 
+                    Este relatório é destinado exclusivamente para clientes da Elitte Capital e não pode ser reproduzido, distribuído ou publicado sem autorização prévia por escrito. 
+                    O analista responsável declara que as opiniões aqui expressas refletem exclusivamente suas visões pessoais sobre os ativos analisados.
+                  </p>
+                </div>
               </div>
             )}
           </div>
+          </div>
         </div>
-
       </div>
 
       {/* Quick Add Client Modal */}
