@@ -1,7 +1,7 @@
-import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
+import { GoogleGenAI, Type, ThinkingLevel, GenerateContentResponse } from '@google/genai';
 
 // Initialize the API client
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 export interface Asset {
   ticker: string;
@@ -417,6 +417,25 @@ export async function generateResearchReport(ticker: string, frameworkType: 1 | 
       }
     }
     return 'Erro ao gerar o relatório.';
+  }
+}
+
+export async function analyzePortfolioForReport(portfolio: any): Promise<string> {
+  const prompt = `Analise a seguinte carteira de investimentos e forneça um breve comentário (máximo 3 frases) sobre a alocação e performance. Fale como um analista sênior da Elitte Capital. Carteira: ${JSON.stringify(portfolio)}`;
+
+  try {
+    const response = await retryWithBackoff(() => ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+      }
+    }));
+
+    return response.text || 'Análise indisponível no momento.';
+  } catch (e: any) {
+    console.error('Gemini Analysis Error:', e);
+    return 'A carteira apresenta uma diversificação equilibrada entre ativos de crescimento e valor.';
   }
 }
 

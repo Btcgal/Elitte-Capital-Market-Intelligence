@@ -4,7 +4,7 @@ import { Calendar, Newspaper, Clock, Globe2, Bot, Loader2, ChevronRight, AlertTr
 import { MacroPanel, MacroIndicator } from '../components/MacroPanel';
 import { ThesisCard } from '../components/ThesisCard';
 import { MarketTicker } from '../components/MarketTicker';
-import { PortfolioMonthlyReport } from '../reports';
+import PortfolioMonthlyReport from '../reports/generators/PortfolioMonthlyReport';
 import { chatWithAssistant } from '../services/gemini';
 import { cn } from '../lib/utils';
 import { InvestmentThesis, Portfolio } from '../types';
@@ -12,6 +12,11 @@ import { InvestmentThesis, Portfolio } from '../types';
 const mockPortfolio: Portfolio = {
   name: "Carteira Alpha",
   value: 2450000,
+  performanceMonth: 4.82,
+  assets: [
+    { ticker: 'PETR4.SA', symbol: 'PETR4', allocation: 25, performance: 12.4 },
+    { ticker: 'VALE3.SA', symbol: 'VALE3', allocation: 20, performance: -2.1 },
+  ]
 };
 
 const initialIndicators: MacroIndicator[] = [
@@ -270,12 +275,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Report Section */}
-      <div className="pt-8 border-t border-border">
-        <div className="flex justify-between items-end border-b border-border pb-6 mb-8">
-          <h2 className="text-2xl font-serif font-semibold text-primary tracking-tight">Relatórios Gerenciais</h2>
-        </div>
-        <PortfolioMonthlyReport portfolio={mockPortfolio} />
+      {/* === RELATÓRIO MENSAL ELITTE (A + B + C + D) === */}
+      <div className="mt-12 border-t border-zinc-800 pt-12">
+        <h2 className="text-2xl font-bold text-emerald-500 mb-6">Relatório Mensal Carteira Alpha</h2>
+        <PortfolioMonthlyReport portfolioName="Alpha" />
       </div>
     </div>
   );

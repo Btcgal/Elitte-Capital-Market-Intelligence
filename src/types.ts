@@ -41,8 +41,10 @@ export interface Portfolio {
   id?: string;
   name: string;
   value: number;
-  assets?: {
+  performanceMonth: number;
+  assets: {
     ticker: string;
+    symbol: string;
     allocation: number;
     performance: number;
   }[];

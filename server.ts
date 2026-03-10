@@ -268,6 +268,24 @@ async function startServer() {
     }
   });
 
+  app.get('/api/portfolio/:name', (req, res) => {
+    const { name } = req.params;
+    // Mock portfolio data for the demo
+    const portfolio = {
+      name: name.charAt(0).toUpperCase() + name.slice(1),
+      value: 1250000.45,
+      performanceMonth: 4.82,
+      assets: [
+        { ticker: 'PETR4.SA', symbol: 'PETR4', allocation: 25, performance: 12.4 },
+        { ticker: 'VALE3.SA', symbol: 'VALE3', allocation: 20, performance: -2.1 },
+        { ticker: 'ITUB4.SA', symbol: 'ITUB4', allocation: 18, performance: 5.6 },
+        { ticker: 'WEGE3.SA', symbol: 'WEGE3', allocation: 15, performance: 8.9 },
+        { ticker: 'AAPL', symbol: 'AAPL', allocation: 22, performance: 15.2 },
+      ]
+    };
+    res.json(portfolio);
+  });
+
   app.post('/api/search-history', (req, res) => {
     const { userId, query } = req.body;
     try {
