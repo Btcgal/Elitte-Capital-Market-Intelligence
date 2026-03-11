@@ -4,7 +4,7 @@ import { Calendar, Newspaper, Clock, Globe2, Bot, Loader2, ChevronRight, AlertTr
 import { MacroPanel, MacroIndicator } from '../components/MacroPanel';
 import { ThesisCard } from '../components/ThesisCard';
 import { MarketTicker } from '../components/MarketTicker';
-import PortfolioMonthlyReport from '../reports/generators/PortfolioMonthlyReport';
+import PortfolioMonthlyReport from '../reports/generators/PortfolioMonthlyGenerator';
 import { chatWithAssistant } from '../services/gemini';
 import { cn } from '../lib/utils';
 import { InvestmentThesis, Portfolio } from '../types';

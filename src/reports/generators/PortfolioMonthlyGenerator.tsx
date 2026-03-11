@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
-import { Portfolio } from '../../types';   
+import { Portfolio } from '../../types';
 import { analyzePortfolioForReport } from '../../services/gemini';
 
 const COLORS = ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
@@ -15,19 +15,18 @@ export default function PortfolioMonthlyReport({ portfolioName = 'Alpha' }: { po
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Dados reais do backend (yahoo-finance2 continua no server.ts)
     fetch(`/api/portfolio/${portfolioName.toLowerCase()}`)
       .then(r => r.json())
-      .then(async (data) => {
+      .then(async (data: Portfolio) => {
         setPortfolio(data);
-        try {
-          const result = await analyzePortfolioForReport(data);
-          setAnalysis(result || 'Análise Gemini carregada.');
-        } catch (error) {
-          console.error('Error analyzing portfolio:', error);
-          setAnalysis('Análise indisponível no momento.');
-        }
+
+        // Análise Gemini 100% frontend (resolve o erro de key)
+        const geminiText = await analyzePortfolioForReport(data);
+        setAnalysis(geminiText);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, [portfolioName]);
 
   const exportExcel = () => {
@@ -38,7 +37,9 @@ export default function PortfolioMonthlyReport({ portfolioName = 'Alpha' }: { po
     XLSX.writeFile(wb, `Elitte_Carteira_Alpha_${format(new Date(), 'dd-MM-yyyy')}.xlsx`);
   };
 
-  if (loading || !portfolio) return <div className="text-emerald-400">Carregando dados reais da Yahoo Finance + análise Gemini...</div>;
+  if (loading || !portfolio) {
+    return <div className="text-emerald-400 text-center py-12">Carregando dados reais + análise Gemini...</div>;
+  }
 
   const chartData = portfolio.assets.map((a, i) => ({
     name: a.symbol,
@@ -48,7 +49,7 @@ export default function PortfolioMonthlyReport({ portfolioName = 'Alpha' }: { po
 
   return (
     <ReportPDF title={`Relatório Mensal - ${portfolio.name}`} filename={`Relatorio-Mensal-${portfolio.name}`}>
-      {/* KPIs reais */}
+      {/* KPIs */}
       <div className="grid grid-cols-2 gap-6 mb-10">
         <div className="bg-zinc-100 p-6 rounded-2xl">
           <p className="text-sm text-zinc-500">Valor Atual</p>
@@ -60,10 +61,10 @@ export default function PortfolioMonthlyReport({ portfolioName = 'Alpha' }: { po
         </div>
       </div>
 
-      {/* Gráfico Recharts */}
+      {/* Gráfico */}
       <div className="mb-10">
         <h3 className="text-xl font-semibold mb-6 text-center text-emerald-700">Alocação de Ativos (real-time)</h3>
-        <div className="h-96 bg-white rounded-2xl p-4 shadow-inner">
+        <div className="h-96 bg-white rounded-2xl p-4">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie data={chartData} cx="50%" cy="50%" innerRadius={85} outerRadius={135} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -76,18 +77,20 @@ export default function PortfolioMonthlyReport({ portfolioName = 'Alpha' }: { po
         </div>
       </div>
 
-      {/* Análise Gemini DINÂMICA */}
+      {/* Análise Gemini DINÂMICA (frontend) */}
       <div className="mt-8 text-sm text-zinc-600 border-t pt-6">
-        <p className="font-semibold">Análise da IA (Gemini):</p>
+        <p className="font-semibold">Análise da IA (Gemini 2.0 Flash):</p>
         <p className="italic mt-3 leading-relaxed">{analysis}</p>
       </div>
 
-      <button onClick={exportExcel} className="mt-8 bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-xl font-medium w-full">
+      <button onClick={exportExcel} className="mt-10 w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-xl text-white font-medium">
         📊 Exportar Excel Completo da Carteira
       </button>
 
       <div className="mt-16 text-[10px] text-zinc-500 text-center border-t pt-6">
-        <strong>Disclaimer:</strong> Este relatório não é recomendação de investimento. Consulte seu advisor. Elitte Capital não se responsabiliza por decisões baseadas neste documento.
+        <strong>Disclaimer:</strong> Este relatório não é recomendação de investimento. Consulte seu advisor. 
+        Elitte Capital não se responsabiliza por decisões baseadas neste documento. 
+        Gerado com dados reais da Yahoo Finance + Gemini.
       </div>
     </ReportPDF>
   );

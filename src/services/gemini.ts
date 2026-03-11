@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type, ThinkingLevel, GenerateContentResponse } from '@google/genai';
 
-// Initialize the API client
+// Initialize the API client using the platform-provided key
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 export interface Asset {
@@ -421,7 +421,20 @@ export async function generateResearchReport(ticker: string, frameworkType: 1 | 
 }
 
 export async function analyzePortfolioForReport(portfolio: any): Promise<string> {
-  const prompt = `Analise a seguinte carteira de investimentos e forneça um breve comentário (máximo 3 frases) sobre a alocação e performance. Fale como um analista sênior da Elitte Capital. Carteira: ${JSON.stringify(portfolio)}`;
+  const prompt = `
+    Você é o analista chefe da Elitte Capital.
+    Analise esta carteira mensal e responda em português, máximo 110 palavras, tom executivo e direto:
+
+    ${JSON.stringify(portfolio, null, 2)}
+
+    Inclua:
+    - Resumo de performance
+    - Pontos fortes
+    - Principal risco
+    - Recomendação de rebalance (1 frase curta)
+
+    Nunca use "talvez", "acho" ou palavras de dúvida.
+  `;
 
   try {
     const response = await retryWithBackoff(() => ai.models.generateContent({
@@ -432,10 +445,10 @@ export async function analyzePortfolioForReport(portfolio: any): Promise<string>
       }
     }));
 
-    return response.text || 'Análise indisponível no momento.';
-  } catch (e: any) {
-    console.error('Gemini Analysis Error:', e);
-    return 'A carteira apresenta uma diversificação equilibrada entre ativos de crescimento e valor.';
+    return response.text || 'Análise Gemini temporariamente indisponível.';
+  } catch (err: any) {
+    console.error('Gemini Analysis Error:', err);
+    return 'Análise Gemini temporariamente indisponível. Dados reais da Yahoo Finance estão carregados.';
   }
 }
 
